@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  nats:
+    image: nats
+    command: -p 4444
+    ports:
+      - 4444:4444
+

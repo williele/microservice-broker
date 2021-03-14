@@ -31,7 +31,7 @@
     "@nrwl/eslint-plugin-nx": "11.5.1",
     "@nrwl/jest": "11.5.1",
     "@nrwl/linter": "11.5.1",
-    "@nrwl/node": "^11.5.1",
+    "@nrwl/node": "11.5.1",
     "@nrwl/tao": "11.5.1",
     "@nrwl/workspace": "11.5.1",
     "@types/jest": "26.0.8",
@@ -49,6 +49,7 @@
   },
   "dependencies": {
     "avsc": "^5.5.3",
-    "fastest-validator": "^1.10.0"
+    "fastest-validator": "^1.10.0",
+    "nats": "^1.4.12"
   }
 }
