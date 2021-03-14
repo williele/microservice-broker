@@ -4,7 +4,11 @@ export interface BrokerConfig {
 
 export interface SerializerConfig {
   /**
-   * If false skip validate before encode or after decode
+   * If false skip validate before encode
    */
-  validate?: boolean;
+  encodeValidate?: boolean;
+  /**
+   * If false skip validate after decode
+   */
+  decodeValidate?: boolean;
 }

@@ -1,4 +1,5 @@
 export type PrimitiveType =
+  | NullType
   | BooleanType
   | IntType
   | LongType
