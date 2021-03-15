@@ -1,6 +1,7 @@
 import { NamedSchemaType } from './schema/interface';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
+import { Context } from './context';
 
 export interface BrokerSchema {
   transporter: string;
@@ -15,11 +16,26 @@ export interface BrokerConfig {
   transporter: BaseTransporter;
 }
 
+export interface HandlerMiddlewareNext {
+  (): Promise<void> | void;
+}
+export interface HandlerMiddleware {
+  (ctx: Context, next: HandlerMiddlewareNext): Promise<void> | void;
+}
+export interface HandlerCompose {
+  (ctx: Context, next?: HandlerMiddlewareNext): Promise<void>;
+}
+
+export interface RequestHandler<I = unknown, O = unknown> {
+  (ctx: Context<I, O>): Promise<void> | void;
+}
+
 export interface AddMethodConfig {
   name: string;
   requestType: NamedSchemaType | string;
   responseType: NamedSchemaType | string;
-  handler: (...args) => Promise<unknown> | unknown;
+  middlewares?: HandlerMiddleware | HandlerMiddleware[];
+  handler: RequestHandler;
 }
 
 export interface TransportPacket {

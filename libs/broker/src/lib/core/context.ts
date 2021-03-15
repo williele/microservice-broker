@@ -1,7 +1,9 @@
-export class Context<T = unknown> {
+export class Context<T = unknown, O = unknown> {
   readonly method?: string;
   readonly action?: string;
   readonly body: T;
+
+  output?: O;
 
   static forMethod<D = unknown>(info: {
     header?: Record<string, string>;
