@@ -8,6 +8,7 @@ import { NamedSchemaType } from './schema';
 import { BrokerSchemaType, NullType } from './constant';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
+import { Context } from './context';
 
 export class Broker {
   public readonly serviceName: string;
@@ -35,6 +36,13 @@ export class Broker {
     // Add default type
     this.serializer.addType(NullType);
     this.serializer.addType(BrokerSchemaType);
+
+    this.addMethod({
+      name: '_metadata',
+      requestType: NullType.name,
+      responseType: BrokerSchemaType.name,
+      handler: () => this.schema,
+    });
   }
 
   async start() {
@@ -68,23 +76,59 @@ export class Broker {
     this.started = true;
 
     // Start subscribe
-    this.transporter.subscribe(
-      `${this.serviceName}_schema`,
-      (_message, reply) => {
-        if (reply) {
-          this.transporter.send(reply, {
-            header: {
-              service: this.serviceName,
-            },
-            body: this.serializer.encode('BrokerSchemaType', this.schema),
-          });
-        }
-      }
+    this.transporter.subscribe(`${this.serviceName}_rpc`, (message, reply) =>
+      this.handleRequest(message, reply)
     );
   }
 
   private handleRequest(packet: TransportPacket, reply?: string) {
-    //
+    // Extract from header
+    // If request is method
+    if (packet.header['method']) {
+      this.handleMethod(packet.header['method'], packet, reply);
+    }
+
+    // If request is action
+    else if (packet.header['action']) {
+      //
+    }
+
+    // Unknown request
+    else {
+      // Response unknown request
+    }
+  }
+
+  private async handleMethod(
+    method: string,
+    packet: TransportPacket,
+    reply?: string
+  ) {
+    const methodInfo = this._methods[method];
+    if (!method) {
+      // Response unimplement error
+    }
+
+    // Unpack request body
+    const body = this.serializer.decode(methodInfo.requestType, packet.body);
+    const context = Context.forMethod({
+      header: packet.header,
+      body,
+    });
+
+    const result = await methodInfo.handler(context);
+    // Response
+    if (reply) {
+      // Pack result
+      const pack = this.serializer.encode(methodInfo.responseType, result);
+      this.transporter.send(reply, {
+        header: {
+          service: this.serviceName,
+          method: method,
+        },
+        body: pack,
+      });
+    }
   }
 
   encode<T>(name: string, val: T) {
