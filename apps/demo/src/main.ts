@@ -1,18 +1,4 @@
-import {
-  Broker,
-  NatsTransporter,
-  ArvoSerializer,
-  Context,
-  HandlerMiddleware,
-} from '@wi/broker';
-
-function testMiddleware(name: string): HandlerMiddleware {
-  return async (_, next) => {
-    console.log(`-- before ${name}`);
-    await next();
-    console.log(`-- after ${name}`);
-  };
-}
+import { Broker, NatsTransporter, ArvoSerializer, Context } from '@wi/broker';
 
 async function main() {
   const nats = new NatsTransporter({
@@ -25,18 +11,20 @@ async function main() {
     transporter: nats,
   });
 
+  broker.type({
+    name: 'HelloMessage',
+    type: 'record',
+    fields: {
+      message: 'string',
+    },
+  });
+
   broker.method({
     name: 'hello',
-    requestType: { name: 'HelloInput', type: 'string' },
-    responseType: { name: 'Hello', type: 'string' },
-    middlewares: [
-      testMiddleware('foo'),
-      testMiddleware('bar'),
-      testMiddleware('baz'),
-    ],
-    handler(ctx: Context<string, string>) {
-      console.log('handling');
-      ctx.output = `hello ${ctx.body}`;
+    request: { name: 'HelloInput', type: 'string' },
+    response: 'HelloMessage',
+    handler(ctx: Context<string, { message: string }>) {
+      ctx.response({ message: `hello ${ctx.req.body}` });
     },
   });
 
@@ -44,10 +32,10 @@ async function main() {
 
   const hello = await nats.sendRequest('foo_rpc', {
     header: { method: 'hello' },
-    body: broker.encode('HelloInput', 'Duy'),
+    body: broker.encode('HelloInput', 'Willie'),
   });
 
-  console.log(broker.decode('Hello', hello.body));
+  console.log(broker.decode('HelloMessage', hello.body));
 }
 
 main().catch((error) => console.error(error));

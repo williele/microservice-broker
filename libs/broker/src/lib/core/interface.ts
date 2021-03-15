@@ -32,8 +32,8 @@ export interface RequestHandler<I = unknown, O = unknown> {
 
 export interface AddMethodConfig {
   name: string;
-  requestType: NamedSchemaType | string;
-  responseType: NamedSchemaType | string;
+  request: NamedSchemaType | string;
+  response: NamedSchemaType | string;
   middlewares?: HandlerMiddleware | HandlerMiddleware[];
   handler: RequestHandler;
 }

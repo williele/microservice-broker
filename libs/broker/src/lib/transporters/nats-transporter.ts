@@ -70,6 +70,8 @@ export class NatsTransporter extends BaseTransporter {
 
     this.client.subscribe(subject, (message, reply) => {
       const unpack = this.decode(message);
+      if (reply) unpack.header['reply'] = reply;
+
       callback(unpack, reply);
     });
   }
