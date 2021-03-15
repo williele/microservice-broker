@@ -1,7 +1,7 @@
 import { SerializerConfig } from '../interface';
 import { NamedSchemaType } from './interface';
 
-export abstract class SerializerAdaptor {
+export abstract class Serializer {
   private readonly types: Record<string, NamedSchemaType> = {};
 
   protected readonly encodeValidate;
@@ -10,6 +10,10 @@ export abstract class SerializerAdaptor {
   constructor(config: SerializerConfig) {
     this.encodeValidate = config.encodeValidate ?? true;
     this.decodeValidate = config.decodeValidate ?? true;
+  }
+
+  getTypes() {
+    return this.types;
   }
 
   addType(schema: NamedSchemaType): string {

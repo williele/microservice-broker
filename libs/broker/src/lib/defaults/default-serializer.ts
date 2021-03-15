@@ -1,4 +1,4 @@
-import { SerializerAdaptor } from '../core/schema/serializer';
+import { Serializer } from '../core/schema/serializer';
 import { types, Type, Schema } from 'avsc';
 import * as FValidator from 'fastest-validator';
 import { SchemaType } from '../core/schema/interface';
@@ -28,7 +28,7 @@ class TimestampType extends types.LogicalType {
 /**
  * Default serializer use Arvo and fastest-validate
  */
-export class DefaultSerializer extends SerializerAdaptor {
+export class DefaultSerializer extends Serializer {
   private cache: Record<string, { arvo: Type; fv: CallableFunction }> = {};
   private cacheSchema: Record<string, { arvo: Schema; fv }> = {};
 
@@ -234,7 +234,7 @@ export class DefaultSerializer extends SerializerAdaptor {
         values: values.arvo,
       };
 
-      console.warn('map type did not support validate yet');
+      // console.warn('map type did not support validate yet');
       fv['type'] = 'any';
     }
     // pointer
@@ -259,6 +259,10 @@ export class DefaultSerializer extends SerializerAdaptor {
         arvo = type.arvo;
         fv = type.fv;
       }
+    }
+    // unknown type
+    else {
+      throw new Error(`Uknown type`);
     }
 
     // root
