@@ -1,45 +1,22 @@
-import { Broker, DefaultSerializer, NatsRPCTransporter } from '@wi/broker';
+import { NatsTransporter } from '@wi/broker';
 
 async function main() {
-  const nats = new NatsRPCTransporter({
-    servers: ['http://localhost:4444'],
-  });
-  const broker = new Broker({
-    serviceName: 'demo',
-    serializer: new DefaultSerializer({}),
-    rpcTransporter: nats,
+  const nats = new NatsTransporter({
+    maxReconnectAttempts: -1,
   });
 
-  broker.addType({ name: 'HelloMessage', type: 'string' });
-  broker.addType({
-    name: 'HelloMessageList',
-    type: 'array',
-    items: { type: 'pointer', pointer: 'HelloMessage' },
+  await nats.connect();
+
+  nats.subscribe('hello', (message, reply) => {
+    const name = message.body.toString();
+    if (reply) nats.send(reply, { body: Buffer.from(`hello ${name}`) });
   });
 
-  broker.addMethod({
-    name: 'hello',
-    requestType: {
-      name: 'HelloInput',
-      type: 'record',
-      fields: {
-        name: { type: 'string', min: 4 },
-      },
-    },
-    responseType: 'HelloMessage',
-    handler(): string {
-      return 'hello, world!';
-    },
+  const res = await nats.sendRequest('hello', {
+    header: { method: 'hello' },
+    body: Buffer.from('foo'),
   });
-
-  await broker.start();
-  console.log('Connected');
-
-  const result = await nats.sendRequest('demo_schema', {
-    method: '_schema',
-    body: null,
-  });
-  console.log(broker.decode('BrokerSchemaType', result.body));
+  console.log(res.body.toString());
 }
 
 main().catch((error) => console.error(error));

@@ -1,14 +1,14 @@
 import { AddMethodConfig, BrokerConfig, BrokerSchema } from './interface';
 import { NamedSchemaType } from './schema/interface';
 import { Serializer } from './schema/serializer';
-import { RPCTransporter } from './rpc';
 import { BrokerSchemaType, NullType } from './constant';
+import { BaseTransporter } from './transporter';
 
 export class Broker {
   public readonly serviceName: string;
   private readonly serializer: Serializer;
 
-  private readonly rpcTransporter: RPCTransporter;
+  private readonly transporter: BaseTransporter;
 
   private started = false;
   private schema: BrokerSchema;
@@ -26,21 +26,11 @@ export class Broker {
     this.serviceName = config.serviceName;
     this.serializer = config.serializer;
 
-    this.rpcTransporter = config.rpcTransporter;
+    this.transporter = config.transporter;
 
     // Add default type
     this.serializer.addType(NullType);
     this.serializer.addType(BrokerSchemaType);
-
-    // Add default method
-    if (this.rpcTransporter) {
-      this.addMethod({
-        name: '_schema',
-        requestType: 'NullType',
-        responseType: 'BrokerSchemaType',
-        handler: () => this.schema,
-      });
-    }
   }
 
   async start() {
@@ -48,6 +38,7 @@ export class Broker {
 
     // Construct schema
     this.schema = {
+      transporter: this.transporter.transporterName,
       types: Object.entries(this.serializer.getTypes()).reduce(
         (a, [name, schema]) => ({ ...a, [name]: JSON.stringify(schema) }),
         {}
@@ -65,33 +56,11 @@ export class Broker {
     };
 
     const connection: Promise<unknown>[] = [];
-    if (this.rpcTransporter) connection.push(this.rpcTransporter.connect());
+
+    connection.push(this.transporter.connect());
 
     await Promise.all(connection);
     this.started = true;
-
-    if (this.rpcTransporter) {
-      // Listen to rpc
-      this.rpcTransporter.listen(
-        `${this.serviceName}_rpc`,
-        async (req, reply) => {
-          this.rpcTransporter.sendResponse(reply, {
-            service: this.serviceName,
-            method: req.method,
-            body: this.encode('BrokerSchemaType', this.schema),
-          });
-        }
-      );
-
-      // Listen to schema
-      this.rpcTransporter.listen(`${this.serviceName}_schema`, (req, reply) =>
-        this.rpcTransporter.sendResponse(reply, {
-          service: this.serviceName,
-          method: req.method,
-          body: this.encode('BrokerSchemaType', this.schema),
-        })
-      );
-    }
   }
 
   encode<T>(name: string, val: T, validate?: boolean) {
