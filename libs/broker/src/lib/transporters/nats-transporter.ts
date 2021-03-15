@@ -1,7 +1,6 @@
-import { BaseTransporter } from '../core/transporter';
+import { BaseTransporter, TransportPacket } from '../core';
 import { connect, ClientOpts, Client, NatsError } from 'nats';
 import * as msgpack5 from 'msgpack5';
-import { TransportPacket } from '../core';
 
 /**
  * Nats transporter dependencies

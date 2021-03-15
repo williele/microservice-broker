@@ -1,22 +1,33 @@
-import { NatsTransporter } from '@wi/broker';
+import { Broker, NatsTransporter, ArvoSerializer } from '@wi/broker';
 
 async function main() {
   const nats = new NatsTransporter({
     maxReconnectAttempts: -1,
   });
 
-  await nats.connect();
-
-  nats.subscribe('hello', (message, reply) => {
-    const name = message.body.toString();
-    if (reply) nats.send(reply, { body: Buffer.from(`hello ${name}`) });
+  const broker = new Broker({
+    serviceName: 'foo',
+    serializer: ArvoSerializer,
+    transporter: nats,
   });
 
-  const res = await nats.sendRequest('hello', {
-    header: { method: 'hello' },
-    body: Buffer.from('foo'),
+  broker.addMethod({
+    name: 'hello',
+    requestType: { name: 'HelloInput', type: 'string' },
+    responseType: { name: 'Hello', type: 'string' },
+    handler() {
+      return 'awesome';
+    },
   });
-  console.log(res.body.toString());
+
+  await broker.start();
+  const schema = await nats.sendRequest('foo_schema', {
+    body: Buffer.from(''),
+  });
+
+  console.log(schema.body.length);
+
+  console.log(broker.decode('BrokerSchemaType', schema.body));
 }
 
 main().catch((error) => console.error(error));

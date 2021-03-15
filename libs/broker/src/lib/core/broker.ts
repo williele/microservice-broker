@@ -1,13 +1,17 @@
-import { AddMethodConfig, BrokerConfig, BrokerSchema } from './interface';
-import { NamedSchemaType } from './schema/interface';
-import { Serializer } from './schema/serializer';
+import {
+  AddMethodConfig,
+  BrokerConfig,
+  BrokerSchema,
+  TransportPacket,
+} from './interface';
+import { NamedSchemaType } from './schema';
 import { BrokerSchemaType, NullType } from './constant';
 import { BaseTransporter } from './transporter';
+import { BaseSerializer } from './serializer';
 
 export class Broker {
   public readonly serviceName: string;
-  private readonly serializer: Serializer;
-
+  private readonly serializer: BaseSerializer;
   private readonly transporter: BaseTransporter;
 
   private started = false;
@@ -24,7 +28,7 @@ export class Broker {
 
   constructor(config: BrokerConfig) {
     this.serviceName = config.serviceName;
-    this.serializer = config.serializer;
+    this.serializer = new config.serializer();
 
     this.transporter = config.transporter;
 
@@ -39,6 +43,7 @@ export class Broker {
     // Construct schema
     this.schema = {
       transporter: this.transporter.transporterName,
+      serializer: this.serializer.serializerName,
       types: Object.entries(this.serializer.getTypes()).reduce(
         (a, [name, schema]) => ({ ...a, [name]: JSON.stringify(schema) }),
         {}
@@ -61,14 +66,33 @@ export class Broker {
 
     await Promise.all(connection);
     this.started = true;
+
+    // Start subscribe
+    this.transporter.subscribe(
+      `${this.serviceName}_schema`,
+      (_message, reply) => {
+        if (reply) {
+          this.transporter.send(reply, {
+            header: {
+              service: this.serviceName,
+            },
+            body: this.serializer.encode('BrokerSchemaType', this.schema),
+          });
+        }
+      }
+    );
   }
 
-  encode<T>(name: string, val: T, validate?: boolean) {
-    return this.serializer.encode<T>(name, val, validate);
+  private handleRequest(packet: TransportPacket, reply?: string) {
+    //
   }
 
-  decode<T>(name: string, buffer: Buffer, validate?: boolean) {
-    return this.serializer.decode<T>(name, buffer, validate);
+  encode<T>(name: string, val: T) {
+    return this.serializer.encode<T>(name, val);
+  }
+
+  decode<T>(name: string, buffer: Buffer) {
+    return this.serializer.decode<T>(name, buffer);
   }
 
   addType(schema: NamedSchemaType) {

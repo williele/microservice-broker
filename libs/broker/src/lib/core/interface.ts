@@ -1,28 +1,17 @@
-import { Serializer } from './schema/serializer';
 import { NamedSchemaType } from './schema/interface';
 import { BaseTransporter } from './transporter';
-
-export interface SerializerConfig {
-  /**
-   * If false skip validate before encode
-   */
-  encodeValidate?: boolean;
-  /**
-   * If false skip validate after decode
-   */
-  decodeValidate?: boolean;
-}
+import { BaseSerializer } from './serializer';
 
 export interface BrokerSchema {
   transporter: string;
+  serializer: string;
   types: Record<string, string>;
   methods: Record<string, { requestType: string; responseType: string }>;
 }
 
 export interface BrokerConfig {
   serviceName: string;
-  serializer: Serializer;
-
+  serializer: { new (): BaseSerializer };
   transporter: BaseTransporter;
 }
 
