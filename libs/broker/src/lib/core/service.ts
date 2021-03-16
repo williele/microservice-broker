@@ -1,17 +1,11 @@
-import {
-  context,
-  Context,
-  request,
-  Request,
-  response,
-  Response,
-} from './context';
+import { Context, defaultContext, defaultResponse, Response } from './context';
 import {
   AddMethodConfig,
   HandlerCompose,
   HandlerMiddleware,
   TransportPacket,
 } from './interface';
+import { handleMethod, sendResponse } from './handlers';
 import { BaseSerializer } from './serializer';
 import { BaseTransporter } from './transporter';
 import { compose } from './utils';
@@ -22,15 +16,21 @@ import { compose } from './utils';
 export class Service {
   private _methods: Record<string, HandlerCompose> = {};
 
-  private _context: Context = Object.create({
-    ...context,
-    serviceName: this.serviceName,
-    serializer: this.serializer,
-    transporter: this.transporter,
-  });
+  private _middlewares: HandlerMiddleware[] = [];
 
-  private _request: Request = Object.create(request);
-  private _response: Response = Object.create(response);
+  private _context: Context = Object.create({
+    ...defaultContext,
+    serviceName: this.serviceName,
+    transporter: this.transporter,
+    serializer: this.serializer,
+  } as Context);
+
+  private _response: Response = Object.create({
+    ...defaultResponse,
+    header: {
+      service: this.serviceName,
+    },
+  } as Response);
 
   constructor(
     private readonly serviceName: string,
@@ -42,68 +42,69 @@ export class Service {
     await this.transporter.connect();
 
     // Subscribe to rpc subject
-    this.transporter.subscribe(
-      `${this.serviceName}_rpc`,
-      this.handle.bind(this)
-    );
-  }
+    const fn = compose([...this._middlewares, this.handle]);
+    this.transporter.subscribe(`${this.serviceName}_rpc`, (packet) => {
+      const ctx = this.createContext(packet);
 
-  private handle(packet: TransportPacket) {
-    // Extract from header
-    // If request is method
-    if (packet.header['method']) {
-      this.handleMethod(packet.header['method'], packet);
-    }
-    // If request is action
-    else if (packet.header['action']) {
-      //
-    }
-    // Unknown request
-    else {
-      // Response unknown request
-    }
+      fn(ctx).catch((err) => {
+        const message = err.message;
+
+        ctx.setHeader('error', message);
+        ctx.res.body = ctx.serializer.encode('StringType', message);
+
+        try {
+          sendResponse(ctx);
+        } catch (err) {
+          console.error('Unhandle', err);
+        }
+      });
+    });
   }
 
   private createContext(packet: TransportPacket): Context {
-    const context: Context = Object.create(this._context);
-    const request: Request = (context.req = Object.create(this._request));
-    const response: Response = (context.res = Object.create(this._response));
-    // Assign packet
-    request.packet = response.packet = context.packet = packet;
+    const ctx: Context = Object.create(this._context);
+    ctx.packet = packet;
+    ctx.res = Object.create(this._response);
 
-    return context;
+    return ctx;
   }
 
-  private handleMethod(method: string, packet: TransportPacket) {
-    const methodFn = this._methods[method];
-    if (!method) {
-      // Response unimplement error
-      return;
+  use(...middlewares: HandlerMiddleware[]) {
+    this._middlewares.push(...middlewares);
+  }
+
+  private handle: HandlerMiddleware = async (ctx: Context) => {
+    // Extract from header
+    const method = ctx.header('method');
+
+    // If request is method
+    if (method) {
+      const methodInfo = this._methods[method];
+      if (!methodInfo) throw new Error('method not exists');
+
+      await methodInfo(ctx);
     }
-
-    // Unpack request body
-    const context = this.createContext(packet);
-    methodFn(context).catch((err) => {
-      console.log('err', err);
-    });
-  }
+    // Unknown request
+    // Response unknown request
+    else throw new Error('unknown handler');
+  };
 
   method(config: AddMethodConfig) {
     if (this._methods[config.name]) {
       throw new Error(`Method ${config.name} already exists`);
     }
 
-    let request: string;
-    if (typeof config.request === 'string')
-      request = this.serializer.getType(config.request).name;
-    else request = this.serializer.addType(config.request);
+    const reqType =
+      typeof config.request === 'string'
+        ? this.serializer.getType(config.request).name
+        : this.serializer.addType(config.request);
 
-    let response: string;
-    if (typeof config.response === 'string')
-      response = this.serializer.getType(config.response).name;
-    else response = this.serializer.addType(config.response);
+    const resType =
+      typeof config.response === 'string'
+        ? this.serializer.getType(config.response).name
+        : this.serializer.addType(config.response);
 
-    const stack = config.middlewares
+    const middlewares = config.middlewares
       ? Array.isArray(config.middlewares)
         ? config.middlewares
         : [config.middlewares]
@@ -111,33 +112,11 @@ export class Service {
 
     // add default stack
     const fn = compose([
-      handleMethod(request, response),
-      ...stack,
+      handleMethod(reqType, resType),
+      ...middlewares,
       config.handler,
     ]);
 
     this._methods[config.name] = fn;
   }
-}
-
-/**
- * Decode request body and encode response body
- * If reply exists in header, resend it
- * @param request
- * @param response
- * @returns
- */
-function handleMethod(request: string, response: string): HandlerMiddleware {
-  return async (ctx: Context, next) => {
-    ctx.req.body = ctx.serializer.decode(request, ctx.packet.body);
-    await next();
-
-    const reply = ctx.req.header['reply'];
-    if (reply && ctx.res.body) {
-      ctx.transporter.send(reply, {
-        header: ctx.res.header || {},
-        body: ctx.serializer.encode(response, ctx.res.body),
-      });
-    }
-  };
 }

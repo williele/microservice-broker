@@ -1,6 +1,6 @@
-import { AddMethodConfig, BrokerConfig } from './interface';
+import { AddMethodConfig, BrokerConfig, HandlerMiddleware } from './interface';
 import { NamedSchemaType } from './schema';
-import { BrokerSchemaType, NullType } from './constant';
+import { BrokerSchemaType, NullType, StringType } from './constant';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
 import { Service } from './service';
@@ -29,13 +29,13 @@ export class Broker {
     // Add default type
     this.serializer.addType(NullType);
     this.serializer.addType(BrokerSchemaType);
+    this.serializer.addType(StringType);
   }
 
   async start() {
     if (this.started) return;
 
     const connection: Promise<unknown>[] = [];
-
     connection.push(this.transporter.connect(), this.service.start());
 
     await Promise.all(connection);
@@ -52,6 +52,10 @@ export class Broker {
 
   type(schema: NamedSchemaType) {
     return this.serializer.addType(schema);
+  }
+
+  use(...middlewares: HandlerMiddleware[]) {
+    this.service.use(...middlewares);
   }
 
   method(config: AddMethodConfig) {

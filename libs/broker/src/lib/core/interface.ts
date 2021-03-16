@@ -39,6 +39,6 @@ export interface AddMethodConfig {
 }
 
 export interface TransportPacket {
-  header?: Record<string, string>;
+  header: Record<string, string>;
   body: Buffer;
 }
