@@ -1,4 +1,4 @@
-import { NamedRecordType } from './schema/interface';
+import { NamedRecordType, NamedSchemaType } from './schema/interface';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
 import { Context } from './context';
@@ -6,8 +6,8 @@ import { Context } from './context';
 export interface BrokerSchema {
   transporter: string;
   serializer: string;
-  types: Record<string, string>;
-  methods: Record<string, { requestType: string; responseType: string }>;
+  types: Record<string, NamedSchemaType>;
+  methods: Record<string, { request: string; response: string }>;
 }
 
 export interface BrokerConfig {

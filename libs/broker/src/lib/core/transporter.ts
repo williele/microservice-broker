@@ -26,7 +26,7 @@ export abstract class BaseTransporter extends EventEmitter {
   abstract sendRequest(
     subject: string,
     packet: TransportPacket
-  ): Promise<unknown>;
+  ): Promise<TransportPacket>;
   abstract send(subject: string, packet: TransportPacket): Promise<void>;
 
   // Status event

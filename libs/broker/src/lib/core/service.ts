@@ -1,6 +1,7 @@
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import {
   AddMethodConfig,
+  BrokerSchema,
   HandlerCompose,
   HandlerMiddleware,
   TransportPacket,
@@ -15,6 +16,7 @@ import { compose } from './utils';
  */
 export class Service {
   private _methods: Record<string, HandlerCompose> = {};
+  public methodInfos: BrokerSchema['methods'] = {};
 
   private _middlewares: HandlerMiddleware[] = [];
 
@@ -50,7 +52,7 @@ export class Service {
         const message = err.message;
 
         ctx.setHeader('error', message);
-        ctx.res.body = ctx.serializer.encode('StringType', message);
+        ctx.res.body = ctx.serializer.encode('NullType', {});
 
         try {
           sendResponse(ctx);
@@ -94,12 +96,12 @@ export class Service {
       throw new Error(`Method ${config.name} already exists`);
     }
 
-    const reqType =
+    const request =
       typeof config.request === 'string'
         ? this.serializer.getType(config.request).name
         : this.serializer.addType(config.request);
 
-    const resType =
+    const response =
       typeof config.response === 'string'
         ? this.serializer.getType(config.response).name
         : this.serializer.addType(config.response);
@@ -112,11 +114,12 @@ export class Service {
 
     // add default stack
     const fn = compose([
-      handleMethod(reqType, resType),
+      handleMethod(request, response),
       ...middlewares,
       config.handler,
     ]);
 
     this._methods[config.name] = fn;
+    this.methodInfos[config.name] = { request, response };
   }
 }

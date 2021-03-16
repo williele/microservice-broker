@@ -4,13 +4,13 @@ const nats = new NatsTransporter({
   maxReconnectAttempts: -1,
 });
 
-const broker = new Broker({
+const server = new Broker({
   serviceName: 'foo',
   serializer: ArvoSerializer,
   transporter: nats,
 });
 
-broker.type({
+server.type({
   name: 'HelloMessage',
   type: 'record',
   fields: {
@@ -18,7 +18,7 @@ broker.type({
   },
 });
 
-broker.method({
+server.method({
   name: 'hello',
   request: {
     name: 'HelloInput',
@@ -33,20 +33,19 @@ broker.method({
   },
 });
 
-broker
-  .start()
-  .then(() => {
-    return nats.sendRequest('foo_rpc', {
-      header: { method: 'hello' },
-      body: broker.encode('HelloInput', { name: 'Willie' }),
-    });
-  })
-  .then((hello) => {
-    console.log(hello.header);
-    if (hello.header.error) {
-      console.log('Error', broker.decode('StringType', hello.body));
-    } else {
-      console.log(broker.decode('HelloMessage', hello.body));
-    }
-  })
-  .catch((error) => console.error(error));
+const client = new Broker({
+  serviceName: 'bar',
+  serializer: ArvoSerializer,
+  transporter: new NatsTransporter({}),
+});
+
+async function main() {
+  await Promise.all([server.start(), client.start()]);
+
+  const foo = await client.call('foo', 'hello', { name: 'Foo' });
+  console.log(foo);
+  const bar = await client.call('foo', 'hello', { name: 'Bar' });
+  console.log(bar);
+}
+
+main().catch((error) => console.error(error));
