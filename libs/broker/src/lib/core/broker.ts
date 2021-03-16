@@ -1,6 +1,5 @@
 import { AddMethodConfig, BrokerConfig, HandlerMiddleware } from './interface';
-import { NamedSchemaType } from './schema';
-import { BrokerSchemaType, NullType, StringType } from './constant';
+import { NamedRecordType } from './schema';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
 import { Service } from './service';
@@ -27,9 +26,9 @@ export class Broker {
     );
 
     // Add default type
-    this.serializer.addType(NullType);
-    this.serializer.addType(BrokerSchemaType);
-    this.serializer.addType(StringType);
+    // this.serializer.addType(NullType);
+    // this.serializer.addType(BrokerSchemaType);
+    // this.serializer.addType(StringType);
   }
 
   async start() {
@@ -50,7 +49,7 @@ export class Broker {
     return this.serializer.decode<T>(name, buffer);
   }
 
-  type(schema: NamedSchemaType) {
+  type(schema: NamedRecordType) {
     return this.serializer.addType(schema);
   }
 

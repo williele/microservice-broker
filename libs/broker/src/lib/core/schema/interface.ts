@@ -19,6 +19,7 @@ export type ComplexType =
 
 export type SchemaType = PrimitiveType | PrimitiveType['type'] | ComplexType;
 export type NamedSchemaType = SchemaType & { name: string };
+export type NamedRecordType = RecordType & { name: string };
 
 interface BaseType {
   name?: string;
@@ -116,7 +117,7 @@ export interface StringType extends BaseType, StringValidator, StringFormat {
 export interface RecordType extends BaseType {
   type: 'record';
   fields: {
-    [name: string]: SchemaType;
+    [name: string]: SchemaType & { order: number };
   };
   default?: Record<string, unknown>;
 }

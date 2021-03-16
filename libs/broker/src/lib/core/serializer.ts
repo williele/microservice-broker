@@ -1,15 +1,15 @@
-import { NamedSchemaType } from './schema';
+import { NamedRecordType } from './schema';
 
 export abstract class BaseSerializer {
   abstract readonly serializerName: string;
 
-  private readonly types: Record<string, NamedSchemaType> = {};
+  private readonly types: Record<string, NamedRecordType> = {};
 
   getTypes() {
     return this.types;
   }
 
-  addType(schema: NamedSchemaType): string {
+  addType(schema: NamedRecordType): string {
     if (this.types[schema.name]) {
       throw new Error(`Record '${schema.name}' already define`);
     }
@@ -22,7 +22,7 @@ export abstract class BaseSerializer {
     return !!this.types[name];
   }
 
-  getType(name: string): NamedSchemaType {
+  getType(name: string): NamedRecordType {
     if (!this.types[name]) {
       throw new Error(`Type '${name}' not exists`);
     }

@@ -96,10 +96,12 @@ export class ArvoSerializer extends BaseSerializer {
     }
     // record
     else if (sc.type === 'record') {
-      const fields = Object.entries(sc.fields).map(([name, def]) => {
-        const result = this.schemaTransform(def, name);
-        return { name, type: result };
-      });
+      const fields = Object.entries(sc.fields)
+        .sort((a, b) => a[1].order - b[1].order)
+        .map(([name, def]) => {
+          const result = this.schemaTransform(def, name);
+          return { name, type: result };
+        });
 
       arvo = {
         type: 'record',

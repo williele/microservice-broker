@@ -1,4 +1,4 @@
-import { NamedSchemaType } from './schema/interface';
+import { NamedRecordType } from './schema/interface';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
 import { Context } from './context';
@@ -32,8 +32,8 @@ export interface RequestHandler<I = unknown, O = unknown> {
 
 export interface AddMethodConfig {
   name: string;
-  request: NamedSchemaType | string;
-  response: NamedSchemaType | string;
+  request: NamedRecordType | string;
+  response: NamedRecordType | string;
   middlewares?: HandlerMiddleware | HandlerMiddleware[];
   handler: RequestHandler;
 }

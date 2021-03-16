@@ -14,16 +14,22 @@ broker.type({
   name: 'HelloMessage',
   type: 'record',
   fields: {
-    message: 'string',
+    message: { type: 'string', order: 1 },
   },
 });
 
 broker.method({
   name: 'hello',
-  request: { name: 'HelloInput', type: 'string' },
+  request: {
+    name: 'HelloInput',
+    type: 'record',
+    fields: {
+      name: { type: 'string', order: 1 },
+    },
+  },
   response: 'HelloMessage',
-  handler(ctx: Context<string, { message: string }>) {
-    ctx.response({ message: `hello ${ctx.body}` });
+  handler(ctx: Context<{ name: string }, { message: string }>) {
+    ctx.response({ message: `hello ${ctx.body.name}` });
   },
 });
 
@@ -32,7 +38,7 @@ broker
   .then(() => {
     return nats.sendRequest('foo_rpc', {
       header: { method: 'hello' },
-      body: broker.encode('HelloInput', 'Willie'),
+      body: broker.encode('HelloInput', { name: 'Willie' }),
     });
   })
   .then((hello) => {

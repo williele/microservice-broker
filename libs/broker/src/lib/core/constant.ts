@@ -17,16 +17,18 @@ export const BrokerSchemaType: NamedSchemaType = {
     types: {
       type: 'map',
       values: 'string',
+      order: 1,
     },
     methods: {
       type: 'map',
       values: {
         type: 'record',
         fields: {
-          requestType: 'string',
-          responseType: 'string',
+          requestType: { type: 'string', order: 1 },
+          responseType: { type: 'string', order: 2 },
         },
       },
+      order: 1,
     },
   },
 };
