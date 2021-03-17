@@ -10,26 +10,3 @@ export const NullType: NamedRecordType = {
   type: 'record',
   fields: {},
 };
-
-export const BrokerSchemaType: NamedRecordType = {
-  name: 'BrokerSchemaType',
-  type: 'record',
-  fields: {
-    types: {
-      type: 'map',
-      values: 'string',
-      order: 1,
-    },
-    methods: {
-      type: 'map',
-      values: {
-        type: 'record',
-        fields: {
-          request: { type: 'string', order: 1 },
-          response: { type: 'string', order: 2 },
-        },
-      },
-      order: 2,
-    },
-  },
-};

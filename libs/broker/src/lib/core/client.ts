@@ -1,7 +1,8 @@
 import { Broker } from './broker';
-import { BrokerSchemaType, NullType } from './constant';
+import { NullType } from './constant';
 import { BrokerSchema } from './interface';
 import { BaseSerializer } from './serializer';
+import { BrokerSchemaType } from './metadata/metadata-service';
 
 export class Client {
   private schema: BrokerSchema;
@@ -31,7 +32,7 @@ export class Client {
 
   private fetchSchema() {
     return this.requestMethod(
-      '_schema',
+      'metadata._schema',
       this.broker.encode(NullType.name, null)
     ).then((body) => {
       this.schema = this.broker.decode(BrokerSchemaType.name, body);

@@ -7,13 +7,18 @@ export interface BrokerSchema {
   transporter: string;
   serializer: string;
   types: Record<string, NamedSchemaType>;
-  methods: Record<string, { request: string; response: string }>;
+  methods: Record<string, MethodInfo>;
 }
 
 export interface BrokerConfig {
   serviceName: string;
   serializer: { new (): BaseSerializer };
   transporter: BaseTransporter;
+}
+
+export interface MethodInfo {
+  request: string;
+  response: string;
 }
 
 export interface HandlerMiddlewareNext {

@@ -1,4 +1,5 @@
 import { NamedRecordType } from './schema';
+import { verifyName } from './utils';
 
 export abstract class BaseSerializer {
   abstract readonly serializerName: string;
@@ -10,6 +11,10 @@ export abstract class BaseSerializer {
   }
 
   addType(schema: NamedRecordType): string {
+    if (!verifyName(schema.name)) {
+      throw new Error(`Record name '${schema.name}' is not valid`);
+    }
+
     if (this.types[schema.name]) {
       throw new Error(`Record '${schema.name}' already define`);
     }

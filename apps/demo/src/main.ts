@@ -1,32 +1,31 @@
 import { Broker, NatsTransporter, ArvoSerializer, Context } from '@wi/broker';
 
-const nats = new NatsTransporter({
-  maxReconnectAttempts: -1,
-});
-
 const server = new Broker({
   serviceName: 'foo',
   serializer: ArvoSerializer,
-  transporter: nats,
+  transporter: new NatsTransporter({}),
 });
 
-server.type({
+server.addType({
   name: 'HelloMessage',
   type: 'record',
   fields: {
     message: { type: 'string', order: 1 },
   },
 });
-
-server.method({
-  name: 'hello',
-  request: {
-    name: 'HelloInput',
-    type: 'record',
-    fields: {
-      name: { type: 'string', order: 1 },
-    },
+server.addType({
+  name: 'HelloInput',
+  type: 'record',
+  fields: {
+    name: { type: 'string', order: 1 },
   },
+});
+
+const mainService = server.createService('main');
+
+mainService.method({
+  name: 'hello',
+  request: 'HelloInput',
   response: 'HelloMessage',
   handler(ctx: Context<{ name: string }, { message: string }>) {
     ctx.response({ message: `hello ${ctx.body.name}` });
@@ -42,9 +41,11 @@ const client = new Broker({
 async function main() {
   await Promise.all([server.start(), client.start()]);
 
-  const foo = await client.call('foo', 'hello', { name: 'Foo' });
+  const fooClient = client.createClient('foo');
+
+  const foo = await fooClient.call('main.hello', { name: 'Foo' });
   console.log(foo);
-  const bar = await client.call('foo', 'hello', { name: 'Bar' });
+  const bar = await fooClient.call('main.hello', { name: 'Bar' });
   console.log(bar);
 }
 
