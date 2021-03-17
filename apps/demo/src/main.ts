@@ -1,4 +1,23 @@
-import { Broker, NatsTransporter, ArvoSerializer, Context } from '@wi/broker';
+import {
+  Broker,
+  NatsTransporter,
+  ArvoSerializer,
+  Context,
+  Record,
+  Field,
+} from '@wi/broker';
+
+@Record()
+class HelloInput {
+  @Field({ type: 'string', order: 1 })
+  name: string;
+}
+
+@Record()
+class HelloMessage {
+  @Field({ type: 'string', order: 1 })
+  message: string;
+}
 
 const server = new Broker({
   serviceName: 'foo',
@@ -6,28 +25,13 @@ const server = new Broker({
   transporter: new NatsTransporter({}),
 });
 
-server.addType({
-  name: 'HelloMessage',
-  type: 'record',
-  fields: {
-    message: { type: 'string', order: 1 },
-  },
-});
-server.addType({
-  name: 'HelloInput',
-  type: 'record',
-  fields: {
-    name: { type: 'string', order: 1 },
-  },
-});
-
 const mainService = server.createService('main');
 
 mainService.method({
   name: 'hello',
-  request: 'HelloInput',
-  response: 'HelloMessage',
-  handler(ctx: Context<{ name: string }, { message: string }>) {
+  request: HelloInput,
+  response: HelloMessage,
+  handler(ctx: Context<HelloInput, HelloMessage>) {
     ctx.response({ message: `hello ${ctx.body.name}` });
   },
 });

@@ -1,5 +1,5 @@
 import { Broker } from '../broker';
-import { NullType } from '../constant';
+import { Null } from '../constant';
 import { RequestHandler } from '../interface';
 import { NamedRecordType } from '../schema';
 import { Service } from '../service';
@@ -39,7 +39,7 @@ export class MetadataService extends Service {
 
     this.method({
       name: '_schema',
-      request: NullType.name,
+      request: Null,
       response: BrokerSchemaType,
       handler: this.schema,
     });

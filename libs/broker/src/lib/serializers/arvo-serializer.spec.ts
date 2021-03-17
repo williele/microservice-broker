@@ -1,6 +1,24 @@
 import { ArvoSerializer } from './arvo-serializer';
+import { Record, Field } from '../core';
 
 describe('ArvoSerializer', () => {
+  it('should work with decorator', () => {
+    @Record()
+    class Test {
+      @Field({ type: 'string', order: 1 })
+      name: string;
+    }
+
+    const serializer = new ArvoSerializer();
+    serializer.record(Test);
+
+    const val: Test = {
+      name: 'demo',
+    };
+    const encode = serializer.encode(Test.name, val);
+    console.log(serializer.decode(Test.name, encode));
+  });
+
   it('should ordering', () => {
     const serializer = new ArvoSerializer();
 

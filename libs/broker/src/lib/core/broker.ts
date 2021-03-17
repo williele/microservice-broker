@@ -9,12 +9,12 @@ import { NamedRecordType } from './schema';
 import { BaseTransporter } from './transporter';
 import { BaseSerializer } from './serializer';
 import { Service } from './service';
-import { NullType } from './constant';
 import { Client } from './client';
 import { Context, Response, defaultContext, defaultResponse } from './context';
 import { compose } from './utils';
 import { sendResponse } from './handlers';
 import { MetadataService } from './metadata/metadata-service';
+import { Null } from './constant';
 
 export class Broker {
   readonly serviceName: string;
@@ -64,7 +64,7 @@ export class Broker {
     } as Response);
 
     // Add default type
-    this.serializer.addType(NullType);
+    this.serializer.record(Null);
 
     // Add default service
     this.services.push(new MetadataService(this));
@@ -188,8 +188,8 @@ export class Broker {
    * @param schema
    * @returns
    */
-  addType(schema: NamedRecordType) {
-    return this.serializer.addType(schema);
+  addRecord(schema: NamedRecordType | { new (...args) }) {
+    return this.serializer.record(schema);
   }
 
   /**

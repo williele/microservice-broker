@@ -35,10 +35,12 @@ export interface RequestHandler<I = unknown, O = unknown> {
   (ctx: Context<I, O>): Promise<void> | void;
 }
 
+export type UsableRecord = NamedRecordType | string | { new (...args) };
+
 export interface AddMethodConfig {
   name: string;
-  request: NamedRecordType | string;
-  response: NamedRecordType | string;
+  request: UsableRecord;
+  response: UsableRecord;
   middlewares?: HandlerMiddleware | HandlerMiddleware[];
   handler: RequestHandler;
 }

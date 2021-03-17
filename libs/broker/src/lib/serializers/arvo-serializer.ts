@@ -30,7 +30,7 @@ export class ArvoSerializer extends BaseSerializer {
   private getCache(name: string): Type {
     if (this.cache[name]) return this.cache[name];
     else {
-      const schema = this.getType(name);
+      const schema = this.getRecord(name);
 
       // Create Type and validator
       const transformed = this.schemaTransform(schema);
@@ -151,11 +151,11 @@ export class ArvoSerializer extends BaseSerializer {
         // User cache
         arvo = cache;
       } else {
-        if (!this.hasType(sc.pointer)) {
+        if (!this.hasRecord(sc.pointer)) {
           throw new Error(`Failed to get pointer type '${sc.pointer}'`);
         }
 
-        const schema = this.getType(sc.pointer);
+        const schema = this.getRecord(sc.pointer);
         const type = this.schemaTransform(schema, undefined);
 
         // save to cache

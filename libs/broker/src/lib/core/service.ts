@@ -27,15 +27,8 @@ export class Service {
       throw new Error(`Method name '${config.name}' is not valid`);
     const name = `${this.name}.${config.name}`;
 
-    const request =
-      typeof config.request === 'string'
-        ? this.broker.serializer.getType(config.request).name
-        : this.broker.serializer.addType(config.request);
-
-    const response =
-      typeof config.response === 'string'
-        ? this.broker.serializer.getType(config.response).name
-        : this.broker.serializer.addType(config.response);
+    const request = this.broker.serializer.record(config.request);
+    const response = this.broker.serializer.record(config.response);
 
     const middlewares = config.middlewares
       ? Array.isArray(config.middlewares)

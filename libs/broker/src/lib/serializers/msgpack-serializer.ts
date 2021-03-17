@@ -13,12 +13,12 @@ export class MsgPackSerializer extends BaseSerializer {
   private decoder = this.msgpack.decode;
 
   encode<T>(name: string, val: T): Buffer {
-    this.getType(name);
+    this.getRecord(name);
     return Buffer.from(this.encoder(val));
   }
 
   decode<T>(name: string, buffer: Buffer): T {
-    this.getType(name);
+    this.getRecord(name);
     return this.decoder(buffer) as T;
   }
 }

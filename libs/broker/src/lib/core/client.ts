@@ -1,5 +1,5 @@
 import { Broker } from './broker';
-import { NullType } from './constant';
+import { Null } from './constant';
 import { BrokerSchema } from './interface';
 import { BaseSerializer } from './serializer';
 import { BrokerSchemaType } from './metadata/metadata-service';
@@ -33,14 +33,14 @@ export class Client {
   private fetchSchema() {
     return this.requestMethod(
       'metadata._schema',
-      this.broker.encode(NullType.name, null)
+      this.broker.encode(Null.name, null)
     ).then((body) => {
       this.schema = this.broker.decode(BrokerSchemaType.name, body);
 
       // Parsing serializer
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       Object.values(this.schema.types).forEach((type: any) => {
-        this.serializer.addType(JSON.parse(type));
+        this.serializer.record(JSON.parse(type));
       });
 
       return this.schema;

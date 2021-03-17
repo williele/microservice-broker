@@ -21,7 +21,7 @@ export type SchemaType = PrimitiveType | PrimitiveType['type'] | ComplexType;
 export type NamedSchemaType = SchemaType & { name: string };
 export type NamedRecordType = RecordType & { name: string };
 
-interface BaseType {
+export interface BaseType {
   name?: string;
   nullable?: boolean;
   description?: string;
