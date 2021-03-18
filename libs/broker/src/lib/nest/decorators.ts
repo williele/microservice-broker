@@ -23,8 +23,9 @@ export function UseMiddleware(...middlewares: MiddlewareConstructor[]) {
     if (descriptor) {
       extendArrayMetadata(MIDDLEWARE_TOKEN, middlewares, descriptor.value);
       return descriptor;
+    } else {
+      extendArrayMetadata(MIDDLEWARE_TOKEN, middlewares, target);
+      return target;
     }
-
-    return target;
   };
 }

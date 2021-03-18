@@ -27,7 +27,15 @@ export class BrokerBuilderService implements OnModuleInit {
 
     // Scanning method
     for (const s of services) {
-      const service = this.broker.createService(s.serviceName);
+      const { service } = s;
+
+      const middlewares = await this.configMiddleware(
+        s.provider.metatype,
+        s.provider
+      );
+      middlewares.forEach((m) => service.use(m));
+
+      // Scan method
       const methods = await this.scanMethods(s.provider);
       methods.forEach((m) => service.method(m));
     }
@@ -45,7 +53,10 @@ export class BrokerBuilderService implements OnModuleInit {
         );
         if (!serviceName) return;
 
-        return { provider, serviceName };
+        // Creats service
+        const service = this.broker.createService(serviceName);
+
+        return { provider, service };
       })
       .filter(filterEmpty);
   }
@@ -61,6 +72,7 @@ export class BrokerBuilderService implements OnModuleInit {
         provider,
       }))
       .filter(filterEmpty);
+
     const methods = [];
     for (const { name, handler, provider } of methodConfigs) {
       const method = await this.configMethod(name, handler, provider);
@@ -95,11 +107,8 @@ export class BrokerBuilderService implements OnModuleInit {
     return config;
   }
 
-  private async configMiddleware(
-    handle: CallableFunction,
-    provider: InstanceWrapper
-  ) {
-    const middlewares = this.reflector.get(MIDDLEWARE_TOKEN, handle);
+  private async configMiddleware(target, provider: InstanceWrapper) {
+    const middlewares = this.reflector.get(MIDDLEWARE_TOKEN, target);
     if (!middlewares) return [];
 
     const host = provider.host;
