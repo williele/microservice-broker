@@ -2,6 +2,8 @@ import { Module, DynamicModule } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { Broker, BrokerConfig } from '../core';
 import { BrokerBuilderService } from './broker-builder.service';
+import { BrokerServer } from './broker-server';
+import { BROKER_TOKEN } from './constant';
 
 @Module({
   imports: [DiscoveryModule],
@@ -14,7 +16,8 @@ export class BrokerModule {
     return {
       global: true,
       module: BrokerModule,
-      providers: [{ provide: Broker, useValue: broker }],
+      providers: [{ provide: BROKER_TOKEN, useValue: broker }, BrokerServer],
+      exports: [BrokerServer],
     };
   }
 }

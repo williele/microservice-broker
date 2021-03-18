@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, Type } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit, Type } from '@nestjs/common';
 import {
   DiscoveryService,
   MetadataScanner,
@@ -7,7 +7,12 @@ import {
 } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
 import { AddMethodConfig, Broker, HandlerMiddleware } from '../core';
-import { METHOD_TOKEN, MIDDLEWARE_TOKEN, SERVICE_TOKEN } from './constant';
+import {
+  BROKER_TOKEN,
+  METHOD_TOKEN,
+  MIDDLEWARE_TOKEN,
+  SERVICE_TOKEN,
+} from './constant';
 import { filterEmpty } from './utils/array.utils';
 import { MethodDecoratorConfig } from './decorators';
 import { Middleware } from './middleware';
@@ -18,7 +23,7 @@ export class BrokerBuilderService implements OnModuleInit {
     private readonly discovery: DiscoveryService,
     private readonly scanner: MetadataScanner,
     private readonly reflector: Reflector,
-    private readonly broker: Broker
+    @Inject(BROKER_TOKEN) private readonly broker: Broker
   ) {}
 
   async onModuleInit() {

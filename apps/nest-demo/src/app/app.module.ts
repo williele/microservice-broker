@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 
 import { BrokerModule, ArvoSerializer, NatsTransporter } from '@wi/broker';
-import { AppController } from './app.controller';
 
 import { AppService } from './app.service';
 import { DemoModule } from './demo/demo.module';
@@ -15,7 +14,7 @@ import { DemoModule } from './demo/demo.module';
     }),
     DemoModule,
   ],
-  controllers: [AppController],
+  controllers: [],
   providers: [AppService],
 })
 export class AppModule {}

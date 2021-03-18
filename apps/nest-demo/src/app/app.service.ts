@@ -1,4 +1,5 @@
 import { Field, Method, Record, Service } from '@wi/broker';
+import type { Context } from '@wi/broker';
 
 @Record()
 export class HelloInput {
@@ -15,12 +16,12 @@ export class Hello {
 @Service('app')
 export class AppService {
   @Method({ request: HelloInput, response: Hello })
-  hello() {
-    return 'hello';
+  hello(ctx: Context<HelloInput>): Hello {
+    return { message: `hello ${ctx.body.name}` };
   }
 
   @Method({ request: HelloInput, response: Hello })
-  getData(): { message: string } {
+  getData(): Hello {
     return { message: 'Welcome to nest-demo!' };
   }
 }

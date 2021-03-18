@@ -6,7 +6,9 @@ import { Demo } from '../demo.service';
 export class AuthMiddleware implements Middleware {
   constructor(private demo: Demo) {}
 
-  handle(ctx: Context, next: CallableFunction) {
+  async handle(ctx: Context, next: CallableFunction) {
+    console.log('auth middleware');
+
     next();
   }
 }
