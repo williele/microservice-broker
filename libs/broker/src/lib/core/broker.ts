@@ -15,6 +15,7 @@ import { compose } from './utils';
 import { sendResponse } from './handlers';
 import { MetadataService } from './metadata/metadata-service';
 import { Null } from './constant';
+import { createSerializer } from './serializer/create-serializer';
 
 export class Broker {
   readonly serviceName: string;
@@ -27,8 +28,6 @@ export class Broker {
     { req: string; res: string; handler: HandlerCompose }
   > = {};
 
-  private readonly serializerClass: { new (): BaseSerializer };
-
   private readonly services: Service[] = [];
   private readonly clients: Record<string, Client> = {};
 
@@ -39,11 +38,9 @@ export class Broker {
   private _context: Context;
   private _response: Response;
 
-  constructor(config: BrokerConfig) {
-    this.serializerClass = config.serializer;
-
+  constructor(private readonly config: BrokerConfig) {
     this.serviceName = config.serviceName;
-    this.serializer = new this.serializerClass();
+    this.serializer = createSerializer(config.serializer);
     this.transporter = config.transporter;
 
     // Default context
@@ -166,7 +163,7 @@ export class Broker {
     this.clients[service] = new Client(
       this,
       service,
-      new this.serializerClass()
+      createSerializer(this.config.serializer)
     );
     return this.clients[service];
   }

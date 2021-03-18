@@ -1,7 +1,7 @@
-import { UsableRecord } from './interface';
-import { NamedRecordType, validateNamedRecord } from './schema';
-import { getRecordData } from './schema/decorators';
-import { verifyName } from './utils';
+import { UsableRecord } from '../interface';
+import { NamedRecordType, validateNamedRecord } from '../schema';
+import { getRecordData } from '../schema/decorators';
+import { verifyName } from '../utils';
 
 export abstract class BaseSerializer {
   abstract readonly serializerName: string;

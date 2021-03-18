@@ -1,5 +1,7 @@
-import * as msgpack5 from 'msgpack5';
-import { BaseSerializer } from '../core';
+import { packageLoader } from '../utils/package-loader';
+import { BaseSerializer } from './serializer';
+
+let msgpack5: typeof import('msgpack5') = undefined;
 
 /**
  * MsgPackSerializer dependencies
@@ -11,6 +13,14 @@ export class MsgPackSerializer extends BaseSerializer {
   private msgpack = msgpack5();
   private encoder = this.msgpack.encode;
   private decoder = this.msgpack.decode;
+
+  constructor() {
+    super();
+
+    msgpack5 = packageLoader('msgpack5', 'MsgPackSerializer', () =>
+      require('msgpack5')
+    );
+  }
 
   encode<T>(name: string, val: T): Buffer {
     this.getRecord(name);

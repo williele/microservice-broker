@@ -1,7 +1,7 @@
 import { NamedRecordType, NamedSchemaType } from './schema/interface';
 import { BaseTransporter } from './transporter';
-import { BaseSerializer } from './serializer';
 import { Context } from './context';
+import { SerializerConfig } from './serializer';
 
 export interface BrokerSchema {
   transporter: string;
@@ -12,7 +12,7 @@ export interface BrokerSchema {
 
 export interface BrokerConfig {
   serviceName: string;
-  serializer: { new (): BaseSerializer };
+  serializer: SerializerConfig;
   transporter: BaseTransporter;
 }
 

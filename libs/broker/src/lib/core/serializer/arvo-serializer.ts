@@ -1,21 +1,10 @@
-import { BaseSerializer, SchemaType } from '../core';
-import { types, Type, Schema } from 'avsc';
+import { BaseSerializer } from './serializer';
+import { SchemaType } from '../schema';
+import type { Type, Schema } from 'avsc';
+import { packageLoader } from '../utils/package-loader';
 
-class TimestampType extends types.LogicalType {
-  static logicalName = 'timestamp';
-
-  _fromValue(val) {
-    return new Date(val);
-  }
-  _toValue(date) {
-    return date instanceof Date ? +date : undefined;
-  }
-  _resolve(type) {
-    if (Type.isType(type, 'long', 'string', 'logical:timestamp')) {
-      return this._fromValue;
-    }
-  }
-}
+let avsc: typeof import('avsc') = undefined;
+let TimestampType = undefined;
 
 /**
  * ArvoSerializer dependencies
@@ -27,6 +16,29 @@ export class ArvoSerializer extends BaseSerializer {
   private cache: Record<string, Type> = {};
   private cacheSchema: Record<string, Schema> = {};
 
+  constructor() {
+    super();
+
+    avsc = packageLoader('avsc', 'ArvoSerializer', () => require('avsc'));
+
+    // Logical type for timestamp
+    TimestampType = class extends avsc.types.LogicalType {
+      static logicalName = 'timestamp';
+
+      _fromValue(val) {
+        return new Date(val);
+      }
+      _toValue(date) {
+        return date instanceof Date ? +date : undefined;
+      }
+      _resolve(type) {
+        if (avsc.Type.isType(type, 'long', 'string', 'logical:timestamp')) {
+          return this._fromValue;
+        }
+      }
+    };
+  }
+
   private getCache(name: string): Type {
     if (this.cache[name]) return this.cache[name];
     else {
@@ -34,7 +46,7 @@ export class ArvoSerializer extends BaseSerializer {
 
       // Create Type and validator
       const transformed = this.schemaTransform(schema);
-      const arvo = Type.forSchema(transformed, {
+      const arvo = avsc.Type.forSchema(transformed, {
         logicalTypes: {
           // Custom logical name
           [TimestampType.logicalName]: TimestampType,
