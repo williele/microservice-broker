@@ -1,0 +1,3 @@
+export const SERVICE_TOKEN = 'SERVICE_TOKEN';
+export const METHOD_TOKEN = 'METHOD_TOKEN';
+export const MIDDLEWARE_TOKEN = 'MIDDLEWARE_TOKEN';

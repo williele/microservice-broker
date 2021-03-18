@@ -1,3 +1,7 @@
 module.exports = {
-  projects: ['<rootDir>/libs/broker', '<rootDir>/apps/demo'],
+  projects: [
+    '<rootDir>/libs/broker',
+    '<rootDir>/apps/demo',
+    '<rootDir>/apps/nest-demo',
+  ],
 };

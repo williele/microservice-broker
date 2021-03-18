@@ -15,5 +15,9 @@
       "options": { "cacheableOperations": ["build", "lint", "test", "e2e"] }
     }
   },
-  "projects": { "broker": { "tags": [] }, "demo": { "tags": [] } }
+  "projects": {
+    "broker": { "tags": [] },
+    "demo": { "tags": [] },
+    "nest-demo": { "tags": [] }
+  }
 }
