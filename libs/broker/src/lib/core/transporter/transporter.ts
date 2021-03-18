@@ -4,8 +4,8 @@ import {
   DISCONNECT_EVENT,
   ERROR_EVENT,
   RECONNECT_EVENT,
-} from './constant';
-import { TransportPacket } from './interface';
+} from '../constant';
+import { TransportPacket } from '../interface';
 
 export abstract class BaseTransporter extends EventEmitter {
   abstract readonly transporterName: string;

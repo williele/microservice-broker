@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 
-import { BrokerModule, NatsTransporter } from '@wi/broker';
+import { BrokerModule } from '@wi/broker';
 
 import { AppService } from './app.service';
 import { DemoModule } from './demo/demo.module';
@@ -10,7 +10,7 @@ import { DemoModule } from './demo/demo.module';
     BrokerModule.forRoot({
       serviceName: 'test',
       serializer: { name: 'arvo' },
-      transporter: new NatsTransporter({}),
+      transporter: { name: 'nats', options: {} },
     }),
     DemoModule,
   ],

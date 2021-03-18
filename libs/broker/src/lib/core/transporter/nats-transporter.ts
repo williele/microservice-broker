@@ -1,27 +1,38 @@
-import { BaseTransporter, TransportPacket } from '../core';
-import { connect, ClientOpts, Client, NatsError } from 'nats';
-import * as msgpack5 from 'msgpack5';
+import { BaseTransporter } from './transporter';
+import { TransportPacket } from '../interface';
+import type { ClientOpts, Client } from 'nats';
+import type { MessagePack } from 'msgpack5';
+import { packageLoader } from '../utils/package-loader';
+
+let nats: typeof import('nats') = undefined;
+let msgpack5: typeof import('msgpack5') = undefined;
 
 /**
  * Nats transporter dependencies
- * - msgpack5
+ * - msgpack5 (fore encode/decode)
  * - nats
  */
 export class NatsTransporter extends BaseTransporter {
   transporterName = 'nats';
 
   private client: Client;
-  private encode = msgpack5().encode;
-  private decode = msgpack5().decode;
+  private msgpack: MessagePack;
 
   constructor(private clientOps: ClientOpts) {
     super();
+
+    nats = packageLoader('nats', 'NatsTransporter', () => require('nats'));
+    msgpack5 = packageLoader('msgpack5', 'NatsTransporter', () =>
+      require('msgpack5')
+    );
+
+    this.msgpack = msgpack5();
   }
 
   async connect() {
     if (this.client) return;
 
-    this.client = connect({
+    this.client = nats.connect({
       ...this.clientOps,
       encoding: 'binary',
       preserveBuffers: true,
@@ -69,7 +80,7 @@ export class NatsTransporter extends BaseTransporter {
     }
 
     this.client.subscribe(subject, (message, reply) => {
-      const unpack = this.decode(message);
+      const unpack = this.msgpack.decode(message);
       if (reply) unpack.header['reply'] = reply;
 
       callback(unpack, reply);
@@ -86,13 +97,13 @@ export class NatsTransporter extends BaseTransporter {
     }
 
     // Encode into messagepack before send out
-    const pack = this.encode(packet);
+    const pack = this.msgpack.encode(packet);
     return new Promise((resolve, reject) => {
       this.client.requestOne(subject, pack, 5_000, (response) => {
-        if (response instanceof NatsError) {
+        if (response instanceof nats.NatsError) {
           reject(response);
         } else {
-          const unpack = this.decode(response);
+          const unpack = this.msgpack.decode(response);
           resolve(unpack);
         }
       });
@@ -101,7 +112,7 @@ export class NatsTransporter extends BaseTransporter {
 
   async send(subject: string, packet: TransportPacket) {
     return new Promise<void>((resolve) => {
-      const pack = this.encode(packet);
+      const pack = this.msgpack.encode(packet);
       this.client.publish(subject, pack, () => resolve());
     });
   }

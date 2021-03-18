@@ -1,5 +1,6 @@
 import { packageLoader } from '../utils/package-loader';
 import { BaseSerializer } from './serializer';
+import { MessagePack } from 'msgpack5';
 
 let msgpack5: typeof import('msgpack5') = undefined;
 
@@ -10,9 +11,7 @@ let msgpack5: typeof import('msgpack5') = undefined;
 export class MsgPackSerializer extends BaseSerializer {
   serializerName = 'msgpack';
 
-  private msgpack = msgpack5();
-  private encoder = this.msgpack.encode;
-  private decoder = this.msgpack.decode;
+  private msgpack: MessagePack;
 
   constructor() {
     super();
@@ -20,15 +19,17 @@ export class MsgPackSerializer extends BaseSerializer {
     msgpack5 = packageLoader('msgpack5', 'MsgPackSerializer', () =>
       require('msgpack5')
     );
+
+    this.msgpack = msgpack5();
   }
 
   encode<T>(name: string, val: T): Buffer {
     this.getRecord(name);
-    return Buffer.from(this.encoder(val));
+    return Buffer.from(this.msgpack.encode(val));
   }
 
   decode<T>(name: string, buffer: Buffer): T {
     this.getRecord(name);
-    return this.decoder(buffer) as T;
+    return this.msgpack.decode(buffer) as T;
   }
 }

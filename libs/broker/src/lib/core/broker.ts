@@ -16,6 +16,7 @@ import { sendResponse } from './handlers';
 import { MetadataService } from './metadata/metadata-service';
 import { Null } from './constant';
 import { createSerializer } from './serializer/create-serializer';
+import { createTransporter } from './transporter/create-transporter';
 
 export class Broker {
   readonly serviceName: string;
@@ -41,7 +42,7 @@ export class Broker {
   constructor(private readonly config: BrokerConfig) {
     this.serviceName = config.serviceName;
     this.serializer = createSerializer(config.serializer);
-    this.transporter = config.transporter;
+    this.transporter = createTransporter(config.transporter);
 
     // Default context
     this._context = Object.create({

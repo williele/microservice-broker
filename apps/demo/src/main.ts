@@ -1,9 +1,9 @@
-import { Broker, NatsTransporter, ArvoSerializer } from '@wi/broker';
+import { Broker } from '@wi/broker';
 
 const broker = new Broker({
   serviceName: 'bar',
-  serializer: ArvoSerializer,
-  transporter: new NatsTransporter({}),
+  serializer: { name: 'arvo' },
+  transporter: { name: 'nats', options: {} },
 });
 
 async function main() {
