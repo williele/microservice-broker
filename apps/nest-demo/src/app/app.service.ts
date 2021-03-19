@@ -1,5 +1,6 @@
-import { Field, Method, Record, Service } from '@wi/broker';
-import type { Context } from '@wi/broker';
+import { Field, Record } from '@williele/broker';
+import { Method, Service } from '@williele/broker-nest';
+import type { Context } from '@williele/broker';
 
 @Record()
 export class HelloInput {

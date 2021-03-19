@@ -6,7 +6,7 @@ import {
   Reflector,
 } from '@nestjs/core';
 import { InstanceWrapper } from '@nestjs/core/injector/instance-wrapper';
-import { AddMethodConfig, Broker, HandlerMiddleware } from '../core';
+import { AddMethodConfig, Broker, HandlerMiddleware } from '@williele/broker';
 import {
   BROKER_TOKEN,
   METHOD_TOKEN,

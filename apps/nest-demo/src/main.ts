@@ -5,7 +5,7 @@
 
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions } from '@nestjs/microservices';
-import { BrokerServer } from '@wi/broker';
+import { BrokerServer } from '@williele/broker-nest';
 
 import { AppModule } from './app/app.module';
 

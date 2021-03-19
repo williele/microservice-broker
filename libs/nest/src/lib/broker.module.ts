@@ -1,6 +1,6 @@
 import { Module, DynamicModule } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
-import { Broker, BrokerConfig } from '../core';
+import { Broker, BrokerConfig } from '@williele/broker';
 import { BrokerBuilderService } from './broker-builder.service';
 import { BrokerServer } from './broker-server';
 import { BROKER_TOKEN } from './constant';

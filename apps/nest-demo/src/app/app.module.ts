@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BrokerModule } from '@wi/broker';
+import { BrokerModule } from '@williele/broker-nest';
 import { initTracer } from 'jaeger-client';
 
 import { AppService } from './app.service';

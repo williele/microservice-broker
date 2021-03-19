@@ -1,5 +1,5 @@
-import { Method, Service, UseMiddleware } from '@wi/broker';
-import type { Context } from '@wi/broker';
+import { Method, Service, UseMiddleware } from '@williele/broker-nest';
+import type { Context } from '@williele/broker';
 import { AuthMiddleware } from '../middlewares/auth.middleware';
 import { DemoInput, DemoOutput } from './model';
 

@@ -1,4 +1,4 @@
-import { Field, Record } from '@wi/broker';
+import { Field, Record } from '@williele/broker';
 
 @Record()
 export class DemoInput {
