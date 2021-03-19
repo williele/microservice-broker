@@ -1,4 +1,4 @@
-import { Tracer, Span } from 'opentracing';
+import { Tracer, Span, FORMAT_HTTP_HEADERS } from 'opentracing';
 import {
   BrokerConfig,
   BrokerSchema,
@@ -55,6 +55,7 @@ export class Broker {
       serviceName: this.serviceName,
       transporter: this.transporter,
       serializer: this.serializer,
+      tracer: this.tracer,
     } as Context);
     // Default response
     this._response = Object.create({
@@ -82,6 +83,9 @@ export class Broker {
     const ctx: Context = Object.create(this._context);
     ctx.packet = packet;
     ctx.res = Object.create(this._response);
+
+    // Initialize request span
+    ctx.span = this.tracer.extract(FORMAT_HTTP_HEADERS, packet.header);
 
     return ctx;
   }
@@ -115,7 +119,6 @@ export class Broker {
   private handle: HandlerMiddleware = async (ctx: Context) => {
     // Extract from header
     const method = ctx.header('method');
-    console.log(ctx.headers());
 
     // If request is method
     if (method) {
@@ -146,7 +149,7 @@ export class Broker {
         const message = err.message;
 
         ctx.setHeader('error', message);
-        ctx.res.body = ctx.serializer.encode('NullType', {});
+        ctx.res.body = ctx.serializer.encode(Null.name, {});
 
         try {
           sendResponse(ctx);

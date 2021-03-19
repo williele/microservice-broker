@@ -43,7 +43,7 @@ export class Service {
     // add default stack
     const handler = compose([
       ...this._middlewares,
-      handleMethod(request, response),
+      handleMethod(name, request, response),
       ...middlewares,
       config.handler,
     ]);
