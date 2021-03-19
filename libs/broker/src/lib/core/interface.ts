@@ -2,6 +2,7 @@ import { NamedRecordType, NamedSchemaType } from './schema/interface';
 import { TransporterConfig } from './transporter';
 import { Context } from './context';
 import { SerializerConfig } from './serializer';
+import type { Tracer } from 'opentracing';
 
 export interface BrokerSchema {
   transporter: string;
@@ -14,6 +15,7 @@ export interface BrokerConfig {
   serviceName: string;
   serializer: SerializerConfig;
   transporter: TransporterConfig;
+  tracer?: Tracer;
 }
 
 export interface MethodInfo {

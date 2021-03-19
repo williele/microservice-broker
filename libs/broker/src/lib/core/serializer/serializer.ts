@@ -1,3 +1,4 @@
+import { Span, Tags } from 'opentracing';
 import { UsableRecord } from '../interface';
 import { NamedRecordType, validateNamedRecord } from '../schema';
 import { getRecordData } from '../schema/decorators';
@@ -81,6 +82,47 @@ export abstract class BaseSerializer {
     }
 
     return this.types[name];
+  }
+
+  encodeFor<T>(context: string, name: string, val: T, span?: Span): Buffer {
+    if (span) span.setTag('schema.type', name);
+
+    try {
+      const result = this.encode(name, val);
+      if (span) {
+        span.log({ event: 'success', length: result.length });
+        span.finish();
+      }
+
+      return result;
+    } catch {
+      if (span) {
+        span.setTag(Tags.ERROR, true);
+        span.log({ event: 'error', 'error.kind': context });
+        span.finish();
+      }
+
+      throw new Error(`Failed to encode '${name}' for '${context}'`);
+    }
+  }
+
+  decodeFor<T>(context: string, name: string, buffer: Buffer, span?: Span): T {
+    if (span) span.setTag('schema.type', name);
+
+    try {
+      const result = this.decode<T>(name, buffer);
+      if (span) span.finish();
+
+      return result;
+    } catch {
+      if (span) {
+        span.setTag(Tags.ERROR, true);
+        span.log({ event: 'error', 'error.kind': context });
+        span.finish();
+      }
+
+      throw new Error(`Failed to decode '${name}' for '${context}'`);
+    }
   }
 
   abstract encode<T>(name: string, val: T): Buffer;

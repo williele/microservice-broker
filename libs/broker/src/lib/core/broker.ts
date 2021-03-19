@@ -1,3 +1,4 @@
+import { Tracer, Span } from 'opentracing';
 import {
   BrokerConfig,
   BrokerSchema,
@@ -22,6 +23,7 @@ export class Broker {
   readonly serviceName: string;
   readonly serializer: BaseSerializer;
   readonly transporter: BaseTransporter;
+  readonly tracer: Tracer;
 
   // List of methods
   private _methods: Record<
@@ -43,6 +45,9 @@ export class Broker {
     this.serviceName = config.serviceName;
     this.serializer = createSerializer(config.serializer);
     this.transporter = createTransporter(config.transporter);
+
+    // Initializer tracer
+    this.tracer = config.tracer || new Tracer();
 
     // Default context
     this._context = Object.create({
@@ -110,6 +115,7 @@ export class Broker {
   private handle: HandlerMiddleware = async (ctx: Context) => {
     // Extract from header
     const method = ctx.header('method');
+    console.log(ctx.headers());
 
     // If request is method
     if (method) {
@@ -210,16 +216,8 @@ export class Broker {
     };
   }
 
-  encode<T>(name: string, val: T) {
-    return this.serializer.encode<T>(name, val);
-  }
-
-  decode<T>(name: string, buffer: Buffer) {
-    return this.serializer.decode<T>(name, buffer);
-  }
-
-  call(service: string, method: string, val: unknown) {
+  call(service: string, method: string, val: unknown, span?: Span) {
     const client = this.createClient(service);
-    return client.call(method, val);
+    return client.call(method, val, span);
   }
 }

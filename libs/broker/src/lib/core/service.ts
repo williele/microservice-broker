@@ -2,12 +2,14 @@ import { AddMethodConfig, HandlerMiddleware } from './interface';
 import { handleMethod } from './handlers';
 import { compose, verifyName } from './utils';
 import { Broker } from './broker';
+import { BaseSerializer } from './serializer';
 
 /**
  * A part of broker for handling request
  */
 export class Service {
   private _middlewares: HandlerMiddleware[] = [];
+  private serializer: BaseSerializer;
 
   constructor(
     protected readonly broker: Broker,
@@ -16,6 +18,8 @@ export class Service {
     if (!verifyName(name)) {
       throw new Error(`Service name '${name}' is not valid`);
     }
+
+    this.serializer = this.broker.serializer;
   }
 
   use(...middlewares: HandlerMiddleware[]) {
@@ -27,8 +31,8 @@ export class Service {
       throw new Error(`Method name '${config.name}' is not valid`);
     const name = `${this.name}.${config.name}`;
 
-    const request = this.broker.serializer.record(config.request);
-    const response = this.broker.serializer.record(config.response);
+    const request = this.serializer.record(config.request);
+    const response = this.serializer.record(config.response);
 
     const middlewares = config.middlewares
       ? Array.isArray(config.middlewares)

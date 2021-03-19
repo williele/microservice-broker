@@ -37,6 +37,7 @@
     "@nrwl/node": "11.5.1",
     "@nrwl/tao": "11.5.1",
     "@nrwl/workspace": "11.5.1",
+    "@types/jaeger-client": "^3.15.4",
     "@types/jest": "26.0.8",
     "@types/msgpack5": "^3.4.1",
     "@types/node": "12.12.38",
@@ -58,8 +59,10 @@
     "@nestjs/platform-express": "^7.0.0",
     "avsc": "^5.5.3",
     "fastest-validator": "^1.10.0",
+    "jaeger-client": "^3.18.1",
     "msgpack5": "^3.6.1",
     "nats": "^1.4.12",
+    "opentracing": "^0.14.5",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~6.6.3",
     "tslib": "^2.0.0"
