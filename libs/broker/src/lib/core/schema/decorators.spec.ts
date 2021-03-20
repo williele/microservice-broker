@@ -1,4 +1,4 @@
-import { Record, Field, getRecordData } from './decorators';
+import { Record, Field, getRecordData, ArrayField } from './decorators';
 import { ArvoSerializer } from '../serializer/arvo-serializer';
 
 describe('Record decorators', () => {
@@ -15,10 +15,13 @@ describe('Record decorators', () => {
       name: string;
       @Field(2, 'long')
       age: number;
-      @Field(3, Foo)
-      foo: Foo;
+      @ArrayField(3, Foo)
+      foo: Foo[];
+
+      @ArrayField(4, 'int')
+      bar: number[];
     }
-    console.log(getRecordData(Test));
+    console.log(JSON.stringify(getRecordData(Test), null, 2));
 
     const serializer = new ArvoSerializer({ name: 'arvo' });
 
@@ -27,7 +30,8 @@ describe('Record decorators', () => {
     const value: Test = {
       name: 'hello',
       age: 32,
-      foo: { name: 'hello world' },
+      foo: [{ name: 'hello world' }, { name: 'demo' }],
+      bar: [10, 3],
     };
     const encode = serializer.encode(Test.name, value);
     console.log(serializer.decode(Test.name, encode));

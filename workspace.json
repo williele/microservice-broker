@@ -259,6 +259,65 @@
           }
         }
       }
+    },
+    "nest-gateway": {
+      "root": "apps/nest-gateway",
+      "sourceRoot": "apps/nest-gateway/src",
+      "projectType": "application",
+      "prefix": "nest-gateway",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:build",
+          "outputs": [
+            "{options.outputPath}"
+          ],
+          "options": {
+            "outputPath": "dist/apps/nest-gateway",
+            "main": "apps/nest-gateway/src/main.ts",
+            "tsConfig": "apps/nest-gateway/tsconfig.app.json",
+            "assets": [
+              "apps/nest-gateway/src/assets"
+            ]
+          },
+          "configurations": {
+            "production": {
+              "optimization": true,
+              "extractLicenses": true,
+              "inspect": false,
+              "fileReplacements": [
+                {
+                  "replace": "apps/nest-gateway/src/environments/environment.ts",
+                  "with": "apps/nest-gateway/src/environments/environment.prod.ts"
+                }
+              ]
+            }
+          }
+        },
+        "serve": {
+          "executor": "@nrwl/node:execute",
+          "options": {
+            "buildTarget": "nest-gateway:build"
+          }
+        },
+        "lint": {
+          "executor": "@nrwl/linter:eslint",
+          "options": {
+            "lintFilePatterns": [
+              "apps/nest-gateway/**/*.ts"
+            ]
+          }
+        },
+        "test": {
+          "executor": "@nrwl/jest:jest",
+          "outputs": [
+            "coverage/apps/nest-gateway"
+          ],
+          "options": {
+            "jestConfig": "apps/nest-gateway/jest.config.js",
+            "passWithNoTests": true
+          }
+        }
+      }
     }
   },
   "cli": {

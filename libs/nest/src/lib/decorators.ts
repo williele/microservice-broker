@@ -1,7 +1,17 @@
-import { applyDecorators, Injectable, SetMetadata } from '@nestjs/common';
+import {
+  applyDecorators,
+  Inject,
+  Injectable,
+  SetMetadata,
+} from '@nestjs/common';
 import { AddMethodConfig } from '@williele/broker';
 import { extendArrayMetadata } from './utils/array.utils';
-import { METHOD_TOKEN, MIDDLEWARE_TOKEN, SERVICE_TOKEN } from './constant';
+import {
+  BROKER_TOKEN,
+  METHOD_TOKEN,
+  MIDDLEWARE_TOKEN,
+  SERVICE_TOKEN,
+} from './constant';
 import { MiddlewareConstructor } from './middleware';
 
 export function Service(name: string) {
@@ -28,3 +38,5 @@ export function UseMiddleware(...middlewares: MiddlewareConstructor[]) {
     }
   };
 }
+
+export const InjectBroker = () => Inject(BROKER_TOKEN);

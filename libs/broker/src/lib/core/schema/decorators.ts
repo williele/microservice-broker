@@ -1,5 +1,5 @@
 import { SchemaError } from '../error';
-import { BaseType, NamedRecordType, SchemaType } from './interface';
+import { ArrayType, BaseType, NamedRecordType, SchemaType } from './interface';
 
 /**
  * Construct record schema by decorators
@@ -46,6 +46,24 @@ export function Field(order: number, config: SchemaType | { new (...args) }) {
         target.constructor
       );
   };
+}
+
+export function ArrayField(
+  order: number,
+  items: SchemaType | { new (...args) },
+  config?: Omit<ArrayType, 'type'>
+) {
+  let item: SchemaType;
+  if (typeof items === 'string') item = { type: items };
+  else if (typeof items === 'function') {
+    item = getRecordData(items);
+    if (!item)
+      throw new SchemaError(
+        `Unknown ${items} as field. Make sure it used @Record`
+      );
+  } else item = items;
+
+  return Field(order, { type: 'array', ...(config || {}), items: item });
 }
 
 export function getRecordData(target): NamedRecordType {

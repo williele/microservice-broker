@@ -1,12 +1,13 @@
 import { Module, Provider } from '@nestjs/common';
 import { Tracer } from 'opentracing';
 import { initTracer } from 'jaeger-client';
+import { NestClient } from './nest-client';
 
 const tracerProvider: Provider = {
   provide: Tracer,
   useValue: initTracer(
     {
-      serviceName: 'nest-service',
+      serviceName: 'nest-gateway',
       sampler: { type: 'const', param: 1 },
       reporter: { logSpans: false },
     },
@@ -15,7 +16,7 @@ const tracerProvider: Provider = {
 };
 
 @Module({
-  providers: [tracerProvider],
-  exports: [Tracer],
+  providers: [tracerProvider, NestClient],
+  exports: [Tracer, NestClient],
 })
 export class SharedModule {}

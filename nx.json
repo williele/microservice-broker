@@ -20,6 +20,7 @@
     "demo": { "tags": [] },
     "nest-demo": { "tags": [] },
     "nest": { "tags": [] },
-    "nest-service": { "tags": [] }
+    "nest-service": { "tags": [] },
+    "nest-gateway": { "tags": [] }
   }
 }

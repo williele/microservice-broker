@@ -5,5 +5,6 @@ module.exports = {
     '<rootDir>/apps/nest-demo',
     '<rootDir>/libs/nest',
     '<rootDir>/apps/nest-service',
+    '<rootDir>/apps/nest-gateway',
   ],
 };
