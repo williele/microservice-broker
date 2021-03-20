@@ -1,4 +1,4 @@
-import { Broker } from '@williele/broker';
+import { Broker, ExtractClient } from '@williele/broker';
 import { initTracer } from 'jaeger-client';
 
 const broker = new Broker({
@@ -13,14 +13,26 @@ const broker = new Broker({
     },
     {}
   ),
+  disableServer: true,
 });
 
+class TestClient extends ExtractClient {
+  constructor(broker: Broker) {
+    super(broker, 'test');
+  }
+
+  readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
+    'demo.hello'
+  );
+}
+
 async function main() {
+  const client = new TestClient(broker);
   await broker.start();
 
-  const client = broker.createClient('test');
-  const result = await client.call('demo.hello', { name: 'Williele' });
-  console.log(result);
+  const result = await client.hello({ name: 'demo' });
+  console.log(result.age);
+  process.exit(0);
 }
 
 main().catch((error) => console.error(error));

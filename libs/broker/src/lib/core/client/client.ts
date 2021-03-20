@@ -61,6 +61,16 @@ export class Client {
       });
   }
 
+  setSchema(schema: ServiceSchema) {
+    this.schema = schema;
+
+    // Parsing serializer
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Object.values(this.schema.types).forEach((type: any) => {
+      this.serializer.record(JSON.parse(type));
+    });
+  }
+
   private fetchSchema(parentSpan?: Span) {
     const span = this.tracer.startSpan('fetch_schema', { childOf: parentSpan });
 
@@ -76,12 +86,7 @@ export class Client {
           body,
           this.tracer.startSpan('decode schema', { childOf: span })
         );
-
-        // Parsing serializer
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        Object.values(this.schema.types).forEach((type: any) => {
-          this.serializer.record(JSON.parse(type));
-        });
+        this.setSchema(this.schema);
 
         return this.schema;
       })
@@ -95,7 +100,7 @@ export class Client {
       });
   }
 
-  async call(method: string, val: unknown, parentSpan?: Span) {
+  async call<O = unknown>(method: string, val: unknown, parentSpan?: Span) {
     const span = this.tracer.startSpan(`call ${this.serviceName}.${method}`, {
       childOf: parentSpan,
       tags: {
@@ -126,7 +131,7 @@ export class Client {
       );
 
       const response = await this.requestMethod(method, body, span);
-      return this.serializer.decodeFor(
+      return this.serializer.decodeFor<O>(
         'method_response',
         methodInfo.response,
         response,
