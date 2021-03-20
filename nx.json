@@ -19,6 +19,7 @@
     "broker": { "tags": [] },
     "demo": { "tags": [] },
     "nest-demo": { "tags": [] },
-    "nest": { "tags": [] }
+    "nest": { "tags": [] },
+    "nest-service": { "tags": [] }
   }
 }

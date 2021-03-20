@@ -4,45 +4,47 @@ import { initTracer } from 'jaeger-client';
 const broker = new Broker({
   serviceName: 'bar',
   serializer: { name: 'arvo' },
-  transporter: { name: 'nats', options: {} },
+  transporter: {
+    name: 'nats',
+    options: {
+      servers: ['http://localhost:4444'],
+    },
+  },
   tracer: initTracer(
     {
       serviceName: 'test-client',
       sampler: { type: 'const', param: 1 },
       reporter: { logSpans: false },
     },
-    {
-      logger: {
-        info: console.log,
-        error: console.error,
-      },
-    }
+    {}
   ),
   disableServer: true,
 });
 
 class TestClient extends ExtractClient {
   constructor(broker: Broker) {
-    super(broker, 'test');
+    super(broker, 'nest');
   }
 
-  readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
-    'demo.hello'
-  );
+  readonly getData = this.createMethod('main.getData');
 
-  readonly demo = this.createMethod<{ name: string }, { age: 'number' }>(
-    'demo.demo'
-  );
+  // readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
+  //   'demo.hello'
+  // );
+
+  // readonly demo = this.createMethod<{ name: string }, { age: 'number' }>(
+  //   'demo.demo'
+  // );
 }
 
 async function main() {
   const client = new TestClient(broker);
   await broker.start();
 
-  const hello = await client.hello({ name: 'demo' });
-  console.log(hello.age);
-  const demo = await client.demo({ name: 'awesome' });
-  console.log(demo.age);
+  // const hello = await client.hello({ name: 'demo' });
+  // console.log(hello.age);
+  const demo = await client.getData(null);
+  console.log(demo);
 }
 
 main().catch((error) => console.error(error));
