@@ -2,13 +2,19 @@ import { Span, Tags } from 'opentracing';
 import { UsableRecord } from '../interface';
 import { NamedRecordType, validateNamedRecord } from '../schema';
 import { getRecordData } from '../schema/decorators';
-import { verifyName } from '../utils';
+import { verifyName } from '../utils/verify-name';
+import { NullRecord, ServiceSchemaRecord } from './default';
+
+const defaultNames: string[] = [NullRecord.name, ServiceSchemaRecord.name];
 
 export abstract class BaseSerializer {
   abstract readonly serializerName: string;
 
   /** type schema cacher */
-  private readonly types: Record<string, NamedRecordType> = {};
+  private readonly types: Record<string, NamedRecordType> = {
+    [NullRecord.name]: NullRecord,
+    [ServiceSchemaRecord.name]: ServiceSchemaRecord,
+  };
   /** type definition cacher */
   private readonly records: Record<string, unknown> = {};
 
@@ -25,7 +31,8 @@ export abstract class BaseSerializer {
     // As pointer to record store
     if (typeof type === 'string') {
       // Record input is string, cannot add definition
-      if (this.records[type]) return type;
+      if (this.types[type]) return type;
+      else if (defaultNames.includes(type)) return type;
       else throw new Error(`Record '${type}' is not exists`);
     }
 
@@ -52,9 +59,11 @@ export abstract class BaseSerializer {
     else {
       if (!validateNamedRecord(type))
         throw new Error(`Invalid record definition`);
-      if (this.records[type.name])
+
+      if (defaultNames.includes(type.name)) return type.name;
+      else if (this.records[type.name])
         throw new Error(`Record '${type.name}' definition is duplicated`);
-      if (!verifyName(type.name))
+      else if (!verifyName(type.name))
         throw new Error(`Record name '${type.name}' is invalid`);
 
       this.types[type.name] = type as NamedRecordType;
@@ -95,10 +104,10 @@ export abstract class BaseSerializer {
       }
 
       return result;
-    } catch {
+    } catch (err) {
       if (span) {
         span.setTag(Tags.ERROR, true);
-        span.log({ event: 'error', 'error.kind': context });
+        span.log({ event: 'error', 'error.kind': err.message });
         span.finish();
       }
 
@@ -114,10 +123,10 @@ export abstract class BaseSerializer {
       if (span) span.finish();
 
       return result;
-    } catch {
+    } catch (err) {
       if (span) {
         span.setTag(Tags.ERROR, true);
-        span.log({ event: 'error', 'error.kind': context });
+        span.log({ event: 'error', 'error.kind': err.message });
         span.finish();
       }
 

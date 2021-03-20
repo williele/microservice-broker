@@ -1,4 +1,4 @@
-import { Broker } from '@wi/broker';
+import { Broker } from '@williele/broker';
 import { initTracer } from 'jaeger-client';
 
 const broker = new Broker({
@@ -9,29 +9,18 @@ const broker = new Broker({
     {
       serviceName: 'demo-client',
       sampler: { type: 'const', param: 1 },
-      reporter: { logSpans: true },
+      reporter: { logSpans: false },
     },
-    {
-      logger: {
-        info(msg) {
-          console.log('INFO ', msg);
-        },
-        error(msg) {
-          console.log('ERROR', msg);
-        },
-      },
-    }
+    {}
   ),
 });
 
 async function main() {
   await broker.start();
 
-  const span = broker.tracer.startSpan('demo_request');
-  console.log(
-    await broker.call('test', 'demo.hello', { name: 'Willie' }, span)
-  );
-  span.finish();
+  const client = broker.createClient('test');
+  const result = await client.call('demo.hello', { name: 'Williele' });
+  console.log(result);
 }
 
 main().catch((error) => console.error(error));

@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { BrokerModule } from '@williele/broker-nest';
 import { initTracer } from 'jaeger-client';
 
-import { AppService } from './app.service';
 import { DemoModule } from './demo/demo.module';
 
 @Module({
@@ -15,7 +14,7 @@ import { DemoModule } from './demo/demo.module';
         {
           serviceName: 'test-service',
           sampler: { type: 'const', param: 1 },
-          reporter: { logSpans: true },
+          reporter: { logSpans: false },
         },
         {
           logger: {
@@ -31,7 +30,5 @@ import { DemoModule } from './demo/demo.module';
     }),
     DemoModule,
   ],
-  controllers: [],
-  providers: [AppService],
 })
 export class AppModule {}

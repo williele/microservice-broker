@@ -1,6 +1,6 @@
 import { Tags } from 'opentracing';
 import { Context } from './context';
-import { HandlerMiddleware } from './interface';
+import { AddMethodConfig, HandlerMiddleware } from './interface';
 
 /**
  * Helper function for sending response
@@ -28,12 +28,14 @@ export function sendResponse(ctx: Context) {
  * @returns
  */
 export function handleMethod(
-  name: string,
   request: string,
-  response: string
+  response: string,
+  config: AddMethodConfig
 ): HandlerMiddleware {
+  const { name } = config;
+
   return async (ctx: Context, next) => {
-    const span = ctx.startSpan('handle_method', {
+    const span = ctx.startSpan('handle method', {
       tags: {
         [Tags.SPAN_KIND]: Tags.SPAN_KIND_RPC_SERVER,
         'method.name': name,
@@ -46,9 +48,9 @@ export function handleMethod(
     try {
       ctx.body = ctx.serializer.decodeFor(
         'method_request',
-        'request',
+        request,
         ctx.packet.body,
-        ctx.startSpan('decode_method_request', { childOf: span })
+        ctx.startSpan('decode request', { childOf: span })
       );
 
       // Set default header
@@ -60,7 +62,7 @@ export function handleMethod(
         'method_response',
         response,
         ctx.res.body,
-        ctx.startSpan('encode_method_response', { childOf: span })
+        ctx.startSpan('encode response', { childOf: span })
       );
 
       await sendResponse(ctx);

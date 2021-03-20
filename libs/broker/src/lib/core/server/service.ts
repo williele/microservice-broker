@@ -14,13 +14,16 @@ export class Service {
   protected readonly serializer: BaseSerializer;
   protected readonly broker: Broker;
 
-  constructor(private readonly server: Server, private readonly name: string) {
+  constructor(
+    protected readonly server: Server,
+    private readonly name: string
+  ) {
     if (!verifyName(name)) {
       throw new Error(`Service name '${name}' is not valid`);
     }
 
     this.broker = server.broker;
-    this.serializer = this.broker.serializer;
+    this.serializer = this.server.serializer;
   }
 
   use(...middlewares: HandlerMiddleware[]) {
@@ -44,11 +47,17 @@ export class Service {
     // add default stack
     const handler = compose([
       ...this._middlewares,
-      handleMethod(name, request, response),
+      handleMethod(request, response, config),
       ...middlewares,
       config.handler,
     ]);
 
-    this.server.addMethod({ name, request, response, handler });
+    this.server.addMethod({
+      name,
+      request,
+      response,
+      handler,
+      description: config.description,
+    });
   }
 }

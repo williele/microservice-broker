@@ -1,23 +1,26 @@
 import { Tracer, Tags, FORMAT_HTTP_HEADERS, Span } from 'opentracing';
 import { Broker } from '../broker';
-import { Null } from '../constant';
-import { BrokerSchema } from '../interface';
-import { BaseSerializer } from '../serializer';
-import { BrokerSchemaType } from '../metadata/metadata-service';
+import { ServiceSchema } from '../server/interface';
+import { BaseSerializer, NullRecord, SerializerConfig } from '../serializer';
+import { createSerializer } from '../serializer/create-serializer';
+import { ServiceSchemaRecord } from '../serializer';
 import { BaseTransporter } from '../transporter';
 
 export class Client {
-  private schema: BrokerSchema;
+  private schema: ServiceSchema;
   private rpcSubject = `${this.serviceName}_rpc`;
 
+  private serializer: BaseSerializer;
   private transporter: BaseTransporter;
   private tracer: Tracer;
 
   constructor(
     private readonly broker: Broker,
     private readonly serviceName: string,
-    private readonly serializer: BaseSerializer
+    serializerConfig: SerializerConfig
   ) {
+    this.serializer = createSerializer(serializerConfig);
+
     this.transporter = this.broker.transporter;
     this.tracer = this.broker.tracer;
   }
@@ -29,7 +32,7 @@ export class Client {
     };
 
     // Create span
-    const span = this.tracer.startSpan('send_method_request', {
+    const span = this.tracer.startSpan('call method', {
       childOf: parentSpan,
     });
     span.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_RPC_CLIENT);
@@ -63,15 +66,15 @@ export class Client {
 
     return this.requestMethod(
       'metadata._schema',
-      this.broker.serializer.encode(Null.name, null),
+      this.serializer.encode(NullRecord.name, null),
       span
     )
       .then((body) => {
-        this.schema = this.broker.serializer.decodeFor(
+        this.schema = this.serializer.decodeFor(
           'schema',
-          BrokerSchemaType.name,
+          ServiceSchemaRecord.name,
           body,
-          this.tracer.startSpan('decode_schema', { childOf: span })
+          this.tracer.startSpan('decode schema', { childOf: span })
         );
 
         // Parsing serializer
@@ -93,40 +96,50 @@ export class Client {
   }
 
   async call(method: string, val: unknown, parentSpan?: Span) {
-    if (parentSpan) {
-      parentSpan.setTag(Tags.SPAN_KIND, Tags.SPAN_KIND_RPC_CLIENT);
-      parentSpan.setTag(Tags.PEER_SERVICE, this.serviceName);
-      parentSpan.setTag('peer.method', method);
-    }
+    const span = this.tracer.startSpan(`call ${this.serviceName}.${method}`, {
+      childOf: parentSpan,
+      tags: {
+        [Tags.SPAN_KIND]: Tags.SPAN_KIND_RPC_CLIENT,
+        [Tags.PEER_SERVICE]: this.serviceName,
+        'peer.method': method,
+      },
+    });
 
-    // If schema not exists then fetch it
-    if (!this.schema) await this.fetchSchema(parentSpan);
+    try {
+      // If schema not exists then fetch it
+      if (!this.schema) await this.fetchSchema(span);
 
-    const methodInfo = this.schema.methods[method];
-    if (!methodInfo) {
-      throw new Error(
-        `Unknown method '${method}' from '${this.serviceName}' service`
+      const methodInfo = this.schema.methods[method];
+      if (!methodInfo) {
+        throw new Error(
+          `Unknown method '${method}' from '${this.serviceName}' service`
+        );
+      }
+
+      const body = this.serializer.encodeFor(
+        'method_request',
+        methodInfo.request,
+        val,
+        this.tracer.startSpan('encode request', {
+          childOf: span,
+        })
       );
-    }
 
-    const body = this.serializer.encodeFor(
-      'method_request',
-      methodInfo.request,
-      val,
-      this.tracer.startSpan('encode_request_body', {
-        childOf: parentSpan,
-      })
-    );
-
-    return this.requestMethod(method, body, parentSpan).then((body) => {
+      const response = await this.requestMethod(method, body, span);
       return this.serializer.decodeFor(
         'method_response',
         methodInfo.response,
-        body,
-        this.tracer.startSpan('decode_response_body', {
-          childOf: parentSpan,
+        response,
+        this.tracer.startSpan('decode response', {
+          childOf: span,
         })
       );
-    });
+    } catch (err) {
+      span.setTag(Tags.ERROR, true);
+      span.log({ event: 'error', 'error.kind': err.message });
+      throw err;
+    } finally {
+      span.finish();
+    }
   }
 }

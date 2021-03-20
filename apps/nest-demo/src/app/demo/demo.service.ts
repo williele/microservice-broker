@@ -11,7 +11,7 @@ export class DemoService {
   @Method({ request: DemoInput, response: DemoOutput })
   async hello(ctx: Context<DemoInput>): Promise<DemoOutput> {
     const span = ctx.startSpan('say_hello');
-    await delay(200);
+    // await delay(200);
 
     return Promise.resolve({ age: 10 }).finally(() => {
       span.finish();

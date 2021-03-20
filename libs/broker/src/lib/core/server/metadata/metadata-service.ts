@@ -1,34 +1,7 @@
 import { Server } from '../server';
-import { Null } from '../../constant';
 import { RequestHandler } from '../interface';
-import { NamedRecordType } from '../../schema';
 import { Service } from '../service';
-
-/**
- * Broker schema type
- */
-export const BrokerSchemaType: NamedRecordType = {
-  name: 'BrokerSchemaType',
-  type: 'record',
-  fields: {
-    types: {
-      type: 'map',
-      values: 'string',
-      order: 1,
-    },
-    methods: {
-      type: 'map',
-      values: {
-        type: 'record',
-        fields: {
-          request: { type: 'string', order: 1 },
-          response: { type: 'string', order: 2 },
-        },
-      },
-      order: 2,
-    },
-  },
-};
+import { ServiceSchemaRecord } from '../../serializer';
 
 /**
  * A metadata service serve all kind of information about this broker
@@ -39,13 +12,14 @@ export class MetadataService extends Service {
 
     this.method({
       name: '_schema',
-      request: Null,
-      response: BrokerSchemaType,
+      request: 'Null',
+      response: ServiceSchemaRecord,
       handler: this.schema,
+      description: 'Get service schema',
     });
   }
 
   private schema: RequestHandler = (ctx) => {
-    // ctx.response(this.ser.getSchema());
+    ctx.response(this.server.getSchema());
   };
 }
