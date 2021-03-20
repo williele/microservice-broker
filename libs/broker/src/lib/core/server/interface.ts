@@ -21,7 +21,7 @@ export interface RequestHandler<I = unknown, O = unknown> {
 }
 
 export interface HandlerMiddlewareNext {
-  (): Promise<void> | void;
+  (): Promise<void>;
 }
 export interface HandlerMiddleware {
   (ctx: Context, next: HandlerMiddlewareNext): Promise<void> | void;

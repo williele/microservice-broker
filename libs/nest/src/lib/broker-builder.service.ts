@@ -103,8 +103,7 @@ export class BrokerBuilderService implements OnModuleInit {
       name: method.name || name,
       middlewares: await this.configMiddleware(handle, provider),
       handler: async (ctx) => {
-        const result = await handle(ctx);
-        ctx.response(result);
+        ctx.response(await handle(ctx));
       },
     };
 

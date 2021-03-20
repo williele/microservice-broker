@@ -23,8 +23,14 @@ export class DemoService {
     });
   }
 
-  @Method({ request: DemoInput, response: DemoOutput })
+  @Method({ request: DemoInput, response: DemoOutput, tracing: true })
   demo(): DemoOutput {
+    // throw new ValidateError('failed_to_validate');
+    // throw ValidateError.fields(
+    //   { field: 'username', constrain: 'unique' },
+    //   { field: 'password', constrain: 'min:10' }
+    // );
+
     return { age: 10 };
   }
 }

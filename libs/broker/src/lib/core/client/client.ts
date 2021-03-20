@@ -5,6 +5,8 @@ import { BaseSerializer, NullRecord, SerializerConfig } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { ServiceSchemaRecord } from '../serializer';
 import { BaseTransporter } from '../transporter';
+import { BadRequestError, BrokerError, BrokerErrorCode } from '../error';
+import { spanLogError } from '../error/span';
 
 export class Client {
   private schema: ServiceSchema;
@@ -43,16 +45,20 @@ export class Client {
     return this.transporter
       .sendRequest(this.rpcSubject, { header, body })
       .then((response) => {
-        const error = response.header['error'];
-        if (error) {
-          throw new Error(error);
+        // Is error
+        const errorCode = response.header['error'];
+
+        if (errorCode) {
+          throw BrokerError.fromCode(
+            errorCode as BrokerErrorCode,
+            response.header['error.message']
+          );
         } else {
           return response.body;
         }
       })
       .catch((error) => {
-        span.setTag(Tags.ERROR, true);
-        span.log({ event: 'error', 'error.kind': error.message });
+        spanLogError(span, error);
         throw error;
       })
       .finally(() => {
@@ -71,7 +77,7 @@ export class Client {
   }
 
   private fetchSchema(parentSpan?: Span) {
-    const span = this.tracer.startSpan('fetch_schema', { childOf: parentSpan });
+    const span = this.tracer.startSpan('fetch schema', { childOf: parentSpan });
 
     return this.requestMethod(
       'metadata._schema',
@@ -90,8 +96,7 @@ export class Client {
         return this.schema;
       })
       .catch((error) => {
-        span.setTag(Tags.ERROR, true);
-        span.log({ event: 'error', 'error.kind': error.message });
+        spanLogError(span, error);
         throw error;
       })
       .finally(() => {
@@ -115,7 +120,7 @@ export class Client {
 
       const methodInfo = this.schema.methods[method];
       if (!methodInfo) {
-        throw new Error(
+        throw new BadRequestError(
           `Unknown method '${method}' from '${this.serviceName}' service`
         );
       }
@@ -138,10 +143,9 @@ export class Client {
           childOf: span,
         })
       );
-    } catch (err) {
-      span.setTag(Tags.ERROR, true);
-      span.log({ event: 'error', 'error.kind': err.message });
-      throw err;
+    } catch (error) {
+      spanLogError(span, error);
+      throw error;
     } finally {
       span.finish();
     }

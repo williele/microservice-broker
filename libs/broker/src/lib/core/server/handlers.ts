@@ -1,5 +1,6 @@
 import { Tags } from 'opentracing';
-import { BadResponseError } from '../error';
+import { BadResponseError, BrokerError, InternalError } from '../error';
+import { spanLogError } from '../error/span';
 import { Context } from './context';
 import { HandlerMiddleware } from './interface';
 
@@ -18,6 +19,19 @@ export function sendResponse(ctx: Context) {
     header: ctx.res.header,
     body: ctx.res.body,
   });
+}
+
+export function sendError(ctx: Context, err: Error) {
+  const error =
+    err instanceof BrokerError
+      ? err
+      : new InternalError(`Unknown error${err.message && `: ${err.message}`}`);
+
+  ctx.setHeader('error', error.code);
+  ctx.setHeader('error.message', error.message);
+  ctx.response(ctx.serializer.encode('Null', {}));
+
+  return sendResponse(ctx);
 }
 
 export function traceHandleMethod(
@@ -39,11 +53,10 @@ export function traceHandleMethod(
     try {
       await next();
       span.finish();
-    } catch (err) {
-      span.setTag(Tags.ERROR, true);
-      span.log({ event: 'error', 'error.kind': err.message });
+    } catch (error) {
+      spanLogError(span, error);
       span.finish();
-      throw err;
+      throw error;
     }
   };
 }

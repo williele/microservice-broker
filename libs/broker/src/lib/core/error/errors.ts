@@ -5,10 +5,13 @@ export enum BrokerErrorCode {
   SCHEMA = 'SchemaError',
   // Serializer
   SERIALIZER = 'SerializerError',
+  // Transport
+  TRANSPORTER = 'TransporterError',
 
   // Handler
   INTERNAL = 'InternalError',
   HANDLER_UNIMPLEMENT = 'HandlerUnimplementError',
+  REQUEST_TIME_OUT = 'RequestTimeOut',
   VALIDATE = 'ValidateError',
   BAD_REQUEST = 'BadRequest',
   BAD_RESPONSE = 'BadResponse',
@@ -18,6 +21,38 @@ export class BrokerError extends Error {
   constructor(public readonly code: string, message: string) {
     super(message);
     this.name = code;
+  }
+
+  static fromCode(code: BrokerErrorCode, message: string) {
+    switch (code) {
+      case BrokerErrorCode.CONFIG:
+        return new ConfigError(message);
+
+      case BrokerErrorCode.SCHEMA:
+        return new SchemaError(message);
+
+      case BrokerErrorCode.SERIALIZER:
+        return new SerializerError(message);
+
+      case BrokerErrorCode.TRANSPORTER:
+        return new TransporterError(message);
+
+      case BrokerErrorCode.INTERNAL:
+        return new InternalError(message);
+      case BrokerErrorCode.HANDLER_UNIMPLEMENT:
+        return new HandlerUnimplementError(message);
+      case BrokerErrorCode.REQUEST_TIME_OUT:
+        return new RequestTimeOutError(message);
+      case BrokerErrorCode.VALIDATE:
+        return new ValidateError(message);
+      case BrokerErrorCode.BAD_REQUEST:
+        return new BadRequestError(message);
+      case BrokerErrorCode.BAD_RESPONSE:
+        return new BadResponseError(message);
+
+      default:
+        return new InternalError('Unknow error');
+    }
   }
 }
 
@@ -42,6 +77,13 @@ export class SerializerError extends BrokerError {
   }
 }
 
+// Transporter
+export class TransporterError extends BrokerError {
+  constructor(message: string) {
+    super(BrokerErrorCode.TRANSPORTER, message);
+  }
+}
+
 // Handler
 export class InternalError extends BrokerError {
   constructor(message: string) {
@@ -53,9 +95,28 @@ export class HandlerUnimplementError extends BrokerError {
     super(BrokerErrorCode.HANDLER_UNIMPLEMENT, message);
   }
 }
+
+export class RequestTimeOutError extends BrokerError {
+  constructor(message: string) {
+    super(BrokerErrorCode.REQUEST_TIME_OUT, message);
+  }
+}
+
 export class ValidateError extends BrokerError {
   constructor(message: string) {
     super(BrokerErrorCode.VALIDATE, message);
+  }
+
+  static fields(...fields: { field: string; constrain: string }[]) {
+    const message = fields
+      .map(({ field, constrain }) => `${field}:${constrain}`)
+      .join(';');
+
+    return new ValidateError(`f>${message}`);
+  }
+
+  static constant(type) {
+    return new ValidateError(`c>${type}`);
   }
 }
 export class BadRequestError extends BrokerError {

@@ -96,7 +96,7 @@ export const defaultContext: Context = {
 
 export const defaultResponse: Response = {
   header: {},
-  body: undefined,
+  body: null,
 
   setHeader(name: string, val: string) {
     this.header[name.toLowerCase().trim()] = val;

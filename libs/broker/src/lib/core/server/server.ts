@@ -5,7 +5,7 @@ import { Service } from './service';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { compose } from './compose';
-import { sendResponse } from './handlers';
+import { sendError } from './handlers';
 import { BaseSerializer, SerializerConfig } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { MetadataService } from './metadata/metadata-service';
@@ -76,14 +76,10 @@ export class Server {
     this.broker.transporter.subscribe(subject, (packet) => {
       const ctx = this.createContext(packet);
 
-      handle(ctx).catch((err) => {
-        const message = err.message;
-
-        ctx.setHeader('error', message);
-        ctx.res.body = ctx.serializer.encode('Null', {});
-
+      handle(ctx).catch(async (err: Error) => {
         try {
-          sendResponse(ctx);
+          // Sending error
+          await sendError(ctx, err);
         } catch (err) {
           console.error('Unhandle', err);
         }

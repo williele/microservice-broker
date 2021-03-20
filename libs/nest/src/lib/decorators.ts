@@ -1,5 +1,5 @@
 import { applyDecorators, Injectable, SetMetadata } from '@nestjs/common';
-import { AddMethodConfig, UsableRecord } from '@williele/broker';
+import { AddMethodConfig } from '@williele/broker';
 import { extendArrayMetadata } from './utils/array.utils';
 import { METHOD_TOKEN, MIDDLEWARE_TOKEN, SERVICE_TOKEN } from './constant';
 import { MiddlewareConstructor } from './middleware';

@@ -29,14 +29,20 @@ class TestClient extends ExtractClient {
   readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
     'demo.hello'
   );
+
+  readonly demo = this.createMethod<{ name: string }, { age: 'number' }>(
+    'demo.demo'
+  );
 }
 
 async function main() {
   const client = new TestClient(broker);
   await broker.start();
 
-  const result = await client.hello({ name: 'demo' });
-  console.log(result.age);
+  const hello = await client.hello({ name: 'demo' });
+  console.log(hello.age);
+  const demo = await client.demo({ name: 'awesome' });
+  console.log(demo.age);
 }
 
 main().catch((error) => console.error(error));

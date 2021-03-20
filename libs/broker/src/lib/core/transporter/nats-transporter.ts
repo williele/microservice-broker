@@ -1,8 +1,9 @@
 import { BaseTransporter } from './transporter';
 import { TransportPacket } from '../interface';
-import type { ClientOpts, Client } from 'nats';
+import { ClientOpts, Client, REQ_TIMEOUT } from 'nats';
 import type { Type } from 'avsc';
 import { packageLoader } from '../utils/package-loader';
+import { RequestTimeOutError, TransporterError } from '../error';
 
 let nats: typeof import('nats') = undefined;
 let avsc: typeof import('avsc') = undefined;
@@ -108,7 +109,11 @@ export class NatsTransporter extends BaseTransporter {
       this.client.requestOne(subject, pack, 5_000, (response) => {
         if (response instanceof nats.NatsError) {
           // if (response.code)
-          reject(response);
+          if (response.code === REQ_TIMEOUT) {
+            reject(new RequestTimeOutError(response.message));
+          } else {
+            reject(new TransporterError(response.message));
+          }
         } else {
           const unpack = this.packetType.fromBuffer(response);
           resolve(unpack);

@@ -7,6 +7,6 @@ export class AuthMiddleware implements Middleware {
   async handle(ctx: Context, next: CallableFunction) {
     console.log('auth middleware');
 
-    next();
+    await next();
   }
 }
