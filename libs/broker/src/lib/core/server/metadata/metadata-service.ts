@@ -1,7 +1,7 @@
-import { Broker } from '../broker';
-import { Null } from '../constant';
+import { Server } from '../server';
+import { Null } from '../../constant';
 import { RequestHandler } from '../interface';
-import { NamedRecordType } from '../schema';
+import { NamedRecordType } from '../../schema';
 import { Service } from '../service';
 
 /**
@@ -34,8 +34,8 @@ export const BrokerSchemaType: NamedRecordType = {
  * A metadata service serve all kind of information about this broker
  */
 export class MetadataService extends Service {
-  constructor(broker: Broker) {
-    super(broker, 'metadata');
+  constructor(server: Server) {
+    super(server, 'metadata');
 
     this.method({
       name: '_schema',
@@ -46,6 +46,6 @@ export class MetadataService extends Service {
   }
 
   private schema: RequestHandler = (ctx) => {
-    ctx.response(this.broker.getSchema());
+    // ctx.response(this.ser.getSchema());
   };
 }

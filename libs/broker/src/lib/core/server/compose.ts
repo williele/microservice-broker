@@ -1,9 +1,9 @@
-import { Context } from './context';
 import {
-  HandlerCompose,
   HandlerMiddleware,
+  HandlerCompose,
   HandlerMiddlewareNext,
-} from './interface';
+} from '@williele/broker';
+import type { Context } from './context';
 
 /**
  * Compose middleware returning
@@ -39,13 +39,4 @@ export function compose(stack: HandlerMiddleware[]): HandlerCompose {
       }
     }
   };
-}
-
-/**
- * Verify if string to valid variable name
- * @param name
- * @returns
- */
-export function verifyName(name: string) {
-  return name.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*$/) !== null;
 }

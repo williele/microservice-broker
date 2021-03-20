@@ -1,24 +1,25 @@
 import { AddMethodConfig, HandlerMiddleware } from './interface';
 import { handleMethod } from './handlers';
-import { compose, verifyName } from './utils';
-import { Broker } from './broker';
-import { BaseSerializer } from './serializer';
+import { verifyName } from '../utils/verify-name';
+import { compose } from './compose';
+import { Broker } from '../broker';
+import { BaseSerializer } from '../serializer';
+import { Server } from './server';
 
 /**
  * A part of broker for handling request
  */
 export class Service {
   private _middlewares: HandlerMiddleware[] = [];
-  private serializer: BaseSerializer;
+  protected readonly serializer: BaseSerializer;
+  protected readonly broker: Broker;
 
-  constructor(
-    protected readonly broker: Broker,
-    private readonly name: string
-  ) {
+  constructor(private readonly server: Server, private readonly name: string) {
     if (!verifyName(name)) {
       throw new Error(`Service name '${name}' is not valid`);
     }
 
+    this.broker = server.broker;
     this.serializer = this.broker.serializer;
   }
 
@@ -48,6 +49,6 @@ export class Service {
       config.handler,
     ]);
 
-    this.broker.addMethod({ name, request, response, handler });
+    this.server.addMethod({ name, request, response, handler });
   }
 }

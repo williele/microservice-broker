@@ -1,6 +1,6 @@
-import { TransportPacket } from './interface';
-import { BaseSerializer } from './serializer';
-import { BaseTransporter } from './transporter';
+import { TransportPacket } from '../interface';
+import { BaseSerializer } from '../serializer';
+import { BaseTransporter } from '../transporter';
 import { Tracer, SpanContext, Span, SpanOptions } from 'opentracing';
 
 export interface Context<I = unknown, O = unknown> {

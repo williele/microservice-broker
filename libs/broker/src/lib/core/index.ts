@@ -3,5 +3,5 @@ export * from './broker';
 export * from './schema';
 export * from './transporter';
 export * from './serializer';
-export * from './context';
+export * from './server';
 export * from './client';

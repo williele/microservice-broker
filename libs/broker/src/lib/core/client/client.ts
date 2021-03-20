@@ -1,10 +1,10 @@
 import { Tracer, Tags, FORMAT_HTTP_HEADERS, Span } from 'opentracing';
-import { Broker } from './broker';
-import { Null } from './constant';
-import { BrokerSchema } from './interface';
-import { BaseSerializer } from './serializer';
-import { BrokerSchemaType } from './metadata/metadata-service';
-import { BaseTransporter } from './transporter';
+import { Broker } from '../broker';
+import { Null } from '../constant';
+import { BrokerSchema } from '../interface';
+import { BaseSerializer } from '../serializer';
+import { BrokerSchemaType } from '../metadata/metadata-service';
+import { BaseTransporter } from '../transporter';
 
 export class Client {
   private schema: BrokerSchema;
