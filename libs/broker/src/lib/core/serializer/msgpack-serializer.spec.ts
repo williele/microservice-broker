@@ -2,11 +2,12 @@ import { MsgPackSerializer } from './msgpack-serializer';
 
 describe('MsgPackSerializer', () => {
   it('should demo', () => {
-    const serializer = new MsgPackSerializer();
+    const serializer = new MsgPackSerializer({ name: 'msgpack' });
 
-    serializer.addType({
+    serializer.record({
       name: 'Demo',
-      type: 'string',
+      type: 'record',
+      fields: {},
     });
 
     const value = { name: 'Hello, world' };

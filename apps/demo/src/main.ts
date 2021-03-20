@@ -7,11 +7,16 @@ const broker = new Broker({
   transporter: { name: 'nats', options: {} },
   tracer: initTracer(
     {
-      serviceName: 'demo-client',
+      serviceName: 'test-client',
       sampler: { type: 'const', param: 1 },
       reporter: { logSpans: false },
     },
-    {}
+    {
+      logger: {
+        info: console.log,
+        error: console.error,
+      },
+    }
   ),
   disableServer: true,
 });
@@ -32,7 +37,6 @@ async function main() {
 
   const result = await client.hello({ name: 'demo' });
   console.log(result.age);
-  process.exit(0);
 }
 
 main().catch((error) => console.error(error));

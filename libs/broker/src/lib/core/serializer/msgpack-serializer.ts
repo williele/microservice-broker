@@ -1,6 +1,7 @@
 import { packageLoader } from '../utils/package-loader';
 import { BaseSerializer } from './serializer';
 import { MessagePack } from 'msgpack5';
+import { MsgPackSerializerConfig } from './interface';
 
 let msgpack5: typeof import('msgpack5') = undefined;
 
@@ -13,8 +14,8 @@ export class MsgPackSerializer extends BaseSerializer {
 
   private msgpack: MessagePack;
 
-  constructor() {
-    super();
+  constructor(config: MsgPackSerializerConfig) {
+    super(config);
 
     msgpack5 = packageLoader('msgpack5', 'MsgPackSerializer', () =>
       require('msgpack5')

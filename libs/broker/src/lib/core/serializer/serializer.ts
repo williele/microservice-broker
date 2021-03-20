@@ -4,6 +4,7 @@ import { NamedRecordType, validateNamedRecord } from '../schema';
 import { getRecordData } from '../schema/decorators';
 import { verifyName } from '../utils/verify-name';
 import { NullRecord, ServiceSchemaRecord } from './default';
+import { SerializerConfig } from './interface';
 
 const defaultNames: string[] = [NullRecord.name, ServiceSchemaRecord.name];
 
@@ -17,6 +18,13 @@ export abstract class BaseSerializer {
   };
   /** type definition cacher */
   private readonly records: Record<string, unknown> = {};
+
+  // Config shorcut
+  private get tracing() {
+    return this.config.tracing ?? false;
+  }
+
+  constructor(private readonly config: SerializerConfig) {}
 
   getTypes() {
     return this.types;
@@ -94,18 +102,18 @@ export abstract class BaseSerializer {
   }
 
   encodeFor<T>(context: string, name: string, val: T, span?: Span): Buffer {
-    if (span) span.setTag('schema.type', name);
+    if (this.tracing && span) span.setTag('schema.type', name);
 
     try {
       const result = this.encode(name, val);
-      if (span) {
+      if (this.tracing && span) {
         span.log({ event: 'success', length: result.length });
         span.finish();
       }
 
       return result;
     } catch (err) {
-      if (span) {
+      if (this.tracing && span) {
         span.setTag(Tags.ERROR, true);
         span.log({ event: 'error', 'error.kind': err.message });
         span.finish();
@@ -116,15 +124,15 @@ export abstract class BaseSerializer {
   }
 
   decodeFor<T>(context: string, name: string, buffer: Buffer, span?: Span): T {
-    if (span) span.setTag('schema.type', name);
+    if (this.tracing && span) span.setTag('schema.type', name);
 
     try {
       const result = this.decode<T>(name, buffer);
-      if (span) span.finish();
+      if (this.tracing && span) span.finish();
 
       return result;
     } catch (err) {
-      if (span) {
+      if (this.tracing && span) {
         span.setTag(Tags.ERROR, true);
         span.log({ event: 'error', 'error.kind': err.message });
         span.finish();

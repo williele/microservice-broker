@@ -1,5 +1,5 @@
 import { AddMethodConfig, HandlerMiddleware } from './interface';
-import { handleMethod } from './handlers';
+import { handleMethod, traceHandleMethod } from './handlers';
 import { verifyName } from '../utils/verify-name';
 import { compose } from './compose';
 import { Broker } from '../broker';
@@ -45,18 +45,21 @@ export class Service {
       : [];
 
     // add default stack
-    const handler = compose([
+    const handlers = [
       ...this._middlewares,
-      handleMethod(request, response, config),
+      ...(config.tracing ?? false
+        ? [traceHandleMethod(name, request, response)]
+        : []),
+      handleMethod(request, response),
       ...middlewares,
       config.handler,
-    ]);
+    ];
 
     this.server.addMethod({
       name,
       request,
       response,
-      handler,
+      handler: compose(handlers),
       description: config.description,
     });
   }

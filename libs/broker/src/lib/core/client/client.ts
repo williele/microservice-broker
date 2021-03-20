@@ -47,7 +47,6 @@ export class Client {
         if (error) {
           throw new Error(error);
         } else {
-          span.setTag('response_body_size', response.body.length);
           return response.body;
         }
       })

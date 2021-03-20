@@ -37,4 +37,5 @@ export interface AddMethodConfig {
   middlewares?: HandlerMiddleware | HandlerMiddleware[];
   description?: string;
   handler: RequestHandler;
+  tracing?: boolean;
 }

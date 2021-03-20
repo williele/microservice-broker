@@ -8,10 +8,15 @@ const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
 @Service('demo')
 @UseMiddleware(AuthMiddleware)
 export class DemoService {
-  @Method({ request: DemoInput, response: DemoOutput })
+  @Method({
+    request: DemoInput,
+    response: DemoOutput,
+    description: 'say hello to demo service',
+    tracing: true,
+  })
   async hello(ctx: Context<DemoInput>): Promise<DemoOutput> {
     const span = ctx.startSpan('say_hello');
-    // await delay(200);
+    await delay(20);
 
     return Promise.resolve({ age: 10 }).finally(() => {
       span.finish();

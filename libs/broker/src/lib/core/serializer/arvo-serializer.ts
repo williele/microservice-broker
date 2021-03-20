@@ -2,6 +2,7 @@ import { BaseSerializer } from './serializer';
 import { SchemaType } from '../schema';
 import type { Type, Schema } from 'avsc';
 import { packageLoader } from '../utils/package-loader';
+import { ArvoSerializerConfig } from './interface';
 
 let avsc: typeof import('avsc') = undefined;
 let TimestampType = undefined;
@@ -16,8 +17,8 @@ export class ArvoSerializer extends BaseSerializer {
   private cache: Record<string, Type> = {};
   private cacheSchema: Record<string, Schema> = {};
 
-  constructor() {
-    super();
+  constructor(config: ArvoSerializerConfig) {
+    super(config);
 
     avsc = packageLoader('avsc', 'ArvoSerializer', () => require('avsc'));
 

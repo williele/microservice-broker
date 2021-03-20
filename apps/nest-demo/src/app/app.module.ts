@@ -1,8 +1,10 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { BrokerModule } from '@williele/broker-nest';
 import { initTracer } from 'jaeger-client';
 
 import { DemoModule } from './demo/demo.module';
+
+const logger = new Logger('Tracer');
 
 @Module({
   imports: [
@@ -18,12 +20,8 @@ import { DemoModule } from './demo/demo.module';
         },
         {
           logger: {
-            info(msg) {
-              console.log('INFO ', msg);
-            },
-            error(msg) {
-              console.log('ERROR', msg);
-            },
+            info: (msg) => logger.log(msg),
+            error: (msg) => logger.error(msg),
           },
         }
       ),

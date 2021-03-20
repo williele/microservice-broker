@@ -7,8 +7,8 @@ import { MsgPackSerializer } from './msgpack-serializer';
  */
 export function createSerializer(config: SerializerConfig) {
   if (config.name === 'arvo') {
-    return new ArvoSerializer();
+    return new ArvoSerializer(config);
   } else if (config.name === 'msgpack') {
-    return new MsgPackSerializer();
+    return new MsgPackSerializer(config);
   }
 }
