@@ -107,6 +107,7 @@ export class NatsTransporter extends BaseTransporter {
     return new Promise((resolve, reject) => {
       this.client.requestOne(subject, pack, 5_000, (response) => {
         if (response instanceof nats.NatsError) {
+          // if (response.code)
           reject(response);
         } else {
           const unpack = this.packetType.fromBuffer(response);

@@ -1,4 +1,5 @@
 import { Tags } from 'opentracing';
+import { BadResponseError } from '../error';
 import { Context } from './context';
 import { HandlerMiddleware } from './interface';
 
@@ -10,7 +11,7 @@ export function sendResponse(ctx: Context) {
   const reply = ctx.header('reply');
   if (!reply) return;
   if (!(ctx.res.body instanceof Buffer)) {
-    throw new Error('response is not buffer');
+    throw new BadResponseError('response is not buffer');
   }
 
   return ctx.transporter.send(reply, {

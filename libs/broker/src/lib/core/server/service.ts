@@ -5,6 +5,7 @@ import { compose } from './compose';
 import { Broker } from '../broker';
 import { BaseSerializer } from '../serializer';
 import { Server } from './server';
+import { ConfigError } from '../error';
 
 /**
  * A part of broker for handling request
@@ -19,7 +20,7 @@ export class Service {
     private readonly name: string
   ) {
     if (!verifyName(name)) {
-      throw new Error(`Service name '${name}' is not valid`);
+      throw new ConfigError(`Service name '${name}' is not valid`);
     }
 
     this.broker = server.broker;
@@ -32,7 +33,7 @@ export class Service {
 
   method(config: AddMethodConfig) {
     if (!verifyName(config.name))
-      throw new Error(`Method name '${config.name}' is not valid`);
+      throw new ConfigError(`Method name '${config.name}' is not valid`);
     const name = `${this.name}.${config.name}`;
 
     const request = this.serializer.record(config.request);

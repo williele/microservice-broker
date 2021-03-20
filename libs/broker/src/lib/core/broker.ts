@@ -4,6 +4,7 @@ import { BaseTransporter } from './transporter';
 import { Client } from './client';
 import { createTransporter } from './transporter/create-transporter';
 import { Server } from './server/server';
+import { ConfigError } from './error';
 
 export class Broker {
   readonly serviceName: string;
@@ -61,7 +62,7 @@ export class Broker {
    */
   createService(name: string) {
     if (this.config.disableServer === true)
-      throw new Error(
+      throw new ConfigError(
         `Cannot create service with config 'disableServer' is true`
       );
 

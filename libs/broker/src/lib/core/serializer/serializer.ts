@@ -1,4 +1,5 @@
 import { Span, Tags } from 'opentracing';
+import { SchemaError, SerializerError } from '../error';
 import { UsableRecord } from '../interface';
 import { NamedRecordType, validateNamedRecord } from '../schema';
 import { getRecordData } from '../schema/decorators';
@@ -41,7 +42,7 @@ export abstract class BaseSerializer {
       // Record input is string, cannot add definition
       if (this.types[type]) return type;
       else if (defaultNames.includes(type)) return type;
-      else throw new Error(`Record '${type}' is not exists`);
+      else throw new SerializerError(`Record '${type}' is not exists`);
     }
 
     // As decorator
@@ -51,11 +52,13 @@ export abstract class BaseSerializer {
       if (record) {
         // Check if two defs is one
         if (record !== type)
-          throw new Error(`Record '${def.name}' definition is duplicated`);
+          throw new SerializerError(
+            `Record '${def.name}' definition is duplicated`
+          );
         return def.name;
       } else {
         if (!verifyName(def.name))
-          throw new Error(`Record name '${def.name}' is invalid`);
+          throw new SchemaError(`Record name '${def.name}' is invalid`);
 
         this.records[def.name] = type;
         this.types[def.name] = def;
@@ -66,13 +69,15 @@ export abstract class BaseSerializer {
     // As schema definition
     else {
       if (!validateNamedRecord(type))
-        throw new Error(`Invalid record definition`);
+        throw new SerializerError(`Invalid record definition`);
 
       if (defaultNames.includes(type.name)) return type.name;
       else if (this.records[type.name])
-        throw new Error(`Record '${type.name}' definition is duplicated`);
+        throw new SerializerError(
+          `Record '${type.name}' definition is duplicated`
+        );
       else if (!verifyName(type.name))
-        throw new Error(`Record name '${type.name}' is invalid`);
+        throw new SchemaError(`Record name '${type.name}' is invalid`);
 
       this.types[type.name] = type as NamedRecordType;
       return type.name;
@@ -95,7 +100,7 @@ export abstract class BaseSerializer {
    */
   getRecord(name: string): NamedRecordType {
     if (!this.types[name]) {
-      throw new Error(`Type '${name}' not exists`);
+      throw new SerializerError(`Type '${name}' not exists`);
     }
 
     return this.types[name];
@@ -119,7 +124,7 @@ export abstract class BaseSerializer {
         span.finish();
       }
 
-      throw new Error(`Failed to encode '${name}' for '${context}'`);
+      throw new SerializerError(`Failed to encode '${name}' for '${context}'`);
     }
   }
 
@@ -138,7 +143,7 @@ export abstract class BaseSerializer {
         span.finish();
       }
 
-      throw new Error(`Failed to decode '${name}' for '${context}'`);
+      throw new SerializerError(`Failed to decode '${name}' for '${context}'`);
     }
   }
 

@@ -3,6 +3,7 @@ import {
   HandlerCompose,
   HandlerMiddlewareNext,
 } from '@williele/broker';
+import { ConfigError } from '../error';
 import type { Context } from './context';
 
 /**
@@ -12,10 +13,10 @@ import type { Context } from './context';
  */
 export function compose(stack: HandlerMiddleware[]): HandlerCompose {
   if (!Array.isArray(stack))
-    throw new TypeError('Middleware stack much be an array!');
+    throw new ConfigError('Middleware stack much be an array!');
   for (const fn of stack) {
     if (typeof fn !== 'function')
-      throw new TypeError('Middleware must be composed of functions!');
+      throw new ConfigError('Middleware must be composed of functions!');
   }
 
   return function (ctx: Context, next: HandlerMiddlewareNext) {
@@ -24,7 +25,7 @@ export function compose(stack: HandlerMiddleware[]): HandlerCompose {
 
     function dispatch(i) {
       if (i <= index) {
-        return Promise.reject(new Error('next() called multiple times'));
+        return Promise.reject(new ConfigError('next() called multiple times'));
       }
 
       index = i;

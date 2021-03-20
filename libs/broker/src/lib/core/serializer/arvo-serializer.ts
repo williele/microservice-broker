@@ -3,6 +3,7 @@ import { SchemaType } from '../schema';
 import type { Type, Schema } from 'avsc';
 import { packageLoader } from '../utils/package-loader';
 import { ArvoSerializerConfig } from './interface';
+import { SchemaError } from '../error';
 
 let avsc: typeof import('avsc') = undefined;
 let TimestampType = undefined;
@@ -165,7 +166,7 @@ export class ArvoSerializer extends BaseSerializer {
         arvo = cache;
       } else {
         if (!this.hasRecord(sc.pointer)) {
-          throw new Error(`Failed to get pointer type '${sc.pointer}'`);
+          throw new SchemaError(`Failed to get pointer type '${sc.pointer}'`);
         }
 
         const schema = this.getRecord(sc.pointer);
@@ -179,7 +180,7 @@ export class ArvoSerializer extends BaseSerializer {
     }
     // unknown type
     else {
-      throw new Error(`Uknown type`);
+      throw new SchemaError(`Uknown type`);
     }
 
     // nullable

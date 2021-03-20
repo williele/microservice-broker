@@ -5,3 +5,4 @@ export * from './serializer';
 export * from './transporter';
 export * from './server';
 export * from './client';
+export * from './error';

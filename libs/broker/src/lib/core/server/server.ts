@@ -9,6 +9,11 @@ import { sendResponse } from './handlers';
 import { BaseSerializer, SerializerConfig } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { MetadataService } from './metadata/metadata-service';
+import {
+  BadRequestError,
+  ConfigError,
+  HandlerUnimplementError,
+} from '../error';
 
 interface MethodInfo {
   request: string;
@@ -61,7 +66,7 @@ export class Server {
 
   async start() {
     if (this._started === true) {
-      throw new Error(`Broker server try to start twice`);
+      throw new ConfigError(`Broker server try to start twice`);
     }
 
     // This can implement global middlwares
@@ -99,11 +104,11 @@ export class Server {
     // If request is method
     if (method) {
       const methodInfo = this._methods[method];
-      if (!methodInfo) throw new Error('method not exists');
+      if (!methodInfo) throw new HandlerUnimplementError('method not exists');
       await methodInfo.handler(ctx);
     }
     // Unknown request
-    else throw new Error('unknown handler');
+    else throw new BadRequestError('unknown handler');
   };
 
   /**
@@ -173,11 +178,13 @@ export class Server {
     description?: string;
   }) {
     if (this._started === true) {
-      throw new Error(`Broker server cannot add new method after started`);
+      throw new ConfigError(
+        `Broker server cannot add new method after started`
+      );
     }
 
     const { name } = config;
-    if (!name) throw new Error(`Method '${name}' already exists`);
+    if (!name) throw new ConfigError(`Method '${name}' already exists`);
 
     this._methods[name] = {
       request: config.request,
