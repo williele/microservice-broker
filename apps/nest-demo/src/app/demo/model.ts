@@ -2,12 +2,12 @@ import { Field, Record } from '@williele/broker';
 
 @Record()
 export class DemoInput {
-  @Field({ type: 'string', order: 1 })
+  @Field(1, 'string')
   name: string;
 }
 
 @Record()
 export class DemoOutput {
-  @Field({ type: 'int', order: 2 })
+  @Field(1, 'int')
   age: number;
 }

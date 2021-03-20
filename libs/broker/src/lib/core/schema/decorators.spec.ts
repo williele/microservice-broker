@@ -1,22 +1,34 @@
 import { Record, Field, getRecordData } from './decorators';
-import { ArvoSerializer } from '../../serializers/arvo-serializer';
+import { ArvoSerializer } from '../serializer/arvo-serializer';
 
 describe('Record decorators', () => {
   it('should construct schema correctly', () => {
     @Record()
-    class Test {
-      @Field({ type: 'string', order: 1 })
+    class Foo {
+      @Field(1, 'string')
       name: string;
-
-      @Field({ type: 'long', order: 2 })
-      age: number;
     }
 
-    const serializer = new ArvoSerializer();
+    @Record()
+    class Test {
+      @Field(1, 'string')
+      name: string;
+      @Field(2, 'long')
+      age: number;
+      @Field(3, Foo)
+      foo: Foo;
+    }
+    console.log(getRecordData(Test));
 
-    serializer.addType(getRecordData(Test));
+    const serializer = new ArvoSerializer({ name: 'arvo' });
 
-    const value: Test = { name: 'hello', age: 32 };
+    serializer.record(getRecordData(Test));
+
+    const value: Test = {
+      name: 'hello',
+      age: 32,
+      foo: { name: 'hello world' },
+    };
     const encode = serializer.encode(Test.name, value);
     console.log(serializer.decode(Test.name, encode));
   });

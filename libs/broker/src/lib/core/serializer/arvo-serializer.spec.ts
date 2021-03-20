@@ -1,15 +1,15 @@
 import { ArvoSerializer } from './arvo-serializer';
-import { Record, Field } from '../core';
+import { Record, Field } from '../schema';
 
 describe('ArvoSerializer', () => {
   it('should work with decorator', () => {
     @Record()
     class Test {
-      @Field({ type: 'string', order: 1 })
+      @Field(1, 'string')
       name: string;
     }
 
-    const serializer = new ArvoSerializer();
+    const serializer = new ArvoSerializer({ name: 'arvo' });
     serializer.record(Test);
 
     const val: Test = {
@@ -20,9 +20,9 @@ describe('ArvoSerializer', () => {
   });
 
   it('should ordering', () => {
-    const serializer = new ArvoSerializer();
+    const serializer = new ArvoSerializer({ name: 'arvo' });
 
-    serializer.addType({
+    serializer.record({
       name: 'A',
       type: 'record',
       fields: {
@@ -31,7 +31,7 @@ describe('ArvoSerializer', () => {
       },
     });
 
-    serializer.addType({
+    serializer.record({
       name: 'B',
       type: 'record',
       fields: {
@@ -45,9 +45,9 @@ describe('ArvoSerializer', () => {
   });
 
   it('should demo', () => {
-    const serializer = new ArvoSerializer();
+    const serializer = new ArvoSerializer({ name: 'arvo' });
 
-    serializer.addType({
+    serializer.record({
       name: 'Demo',
       type: 'record',
       fields: {
