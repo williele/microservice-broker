@@ -13,7 +13,7 @@ import {
   VariableNode,
 } from './generators';
 
-const hideTypes = ['ServiceSchema'];
+const hideTypes = ['ServiceSchema', 'Null'];
 
 export function generateClient(
   serviceName: string,
@@ -93,6 +93,11 @@ export function generateClient(
     )
   );
 
+  function methodGeneric(name: string) {
+    if (name === 'Null') return new TypeNode('null');
+    else return new TypeNode(name);
+  }
+
   Object.entries(schema.methods).forEach(([name, config]) => {
     const propName = name.split('.').join('_');
     if (propName.startsWith('metadata')) return;
@@ -101,9 +106,10 @@ export function generateClient(
       'this.createMethod',
       new ValueNode(name, true)
     );
+    // method generics
     method.generics.push(
-      new TypeNode(config.request),
-      new TypeNode(config.response)
+      methodGeneric(config.request),
+      methodGeneric(config.response)
     );
 
     const props = new VariableNode(propName);

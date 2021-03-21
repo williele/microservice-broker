@@ -35,8 +35,6 @@ export async function generateDependency(
     serviceConfig.generate
   );
   const path = resolve(serviceConfig.generate.dir, `${config.name}.client.ts`);
-  console.log(clientFile);
-  console.log(path);
 
   await writeFileAsync(path, clientFile);
 

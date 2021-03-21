@@ -1,7 +1,7 @@
 import { Module, Provider } from '@nestjs/common';
 import { Tracer } from 'opentracing';
 import { initTracer } from 'jaeger-client';
-import { NestClient } from './nest-client';
+import { NestClient } from './nest.client';
 
 const tracerProvider: Provider = {
   provide: Tracer,

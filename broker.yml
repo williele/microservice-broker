@@ -7,8 +7,9 @@ transporter:
       - http://localhost:4444
 
 services:
-  auth:
+  nest-gateway:
     generate:
-      dir: apps/demo/src/generated
+      dir: apps/nest-gateway/src/app/shared
+      forNest: true
       dependencies:
         nest:
