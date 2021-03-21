@@ -34,7 +34,7 @@ export function Field(order: number, config: SchemaType | { new (...args) }) {
         throw new SchemaError(
           `Unknown ${config} as field. Make sure it used @Record`
         );
-      field = { order, ...record };
+      field = { order, type: 'pointer', pointer: record.name };
     } else field = { order, ...config };
 
     if (!fields)
@@ -56,11 +56,13 @@ export function ArrayField(
   let item: SchemaType;
   if (typeof items === 'string') item = { type: items };
   else if (typeof items === 'function') {
-    item = getRecordData(items);
-    if (!item)
+    const record = getRecordData(items);
+    if (!record)
       throw new SchemaError(
         `Unknown ${items} as field. Make sure it used @Record`
       );
+
+    item = { type: 'pointer', pointer: record.name };
   } else item = items;
 
   return Field(order, { type: 'array', ...(config || {}), items: item });

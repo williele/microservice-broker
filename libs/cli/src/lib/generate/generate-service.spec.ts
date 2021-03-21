@@ -10,15 +10,10 @@ describe('Generate service', () => {
         options: { servers: ['http://localhost:4444'] },
       },
       generate: {
-        dir: 'test/generated',
-        dependencies: {
-          nest: {
-            name: 'nest',
-          },
-        },
+        dir: 'tmp/generated',
+        forNest: true,
+        dependencies: { nest: { name: 'nest' } },
       },
     });
-
-    //
   });
 });

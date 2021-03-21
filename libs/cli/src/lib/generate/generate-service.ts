@@ -1,10 +1,14 @@
 import { Broker } from '@williele/broker';
 import { DependencyConfig, ServiceConfig } from '../interface';
 import { getDependencies } from '../utils/config-reader';
+import { generateClient } from './generate-client';
+import { writeFile } from 'fs';
+import { promisify } from 'util';
+import { resolve } from 'path';
+
+const writeFileAsync = promisify(writeFile);
 
 export async function generateService(config: ServiceConfig) {
-  console.log(config);
-
   await Promise.all(
     getDependencies(config).map((d) => generateDependency(config, d))
   );
@@ -25,8 +29,16 @@ export async function generateDependency(
   const client = broker.createClient(config.name);
   const schema = await client.fetchSchema();
 
-  console.log(schema);
+  const clientFile = generateClient(
+    config.name,
+    schema,
+    serviceConfig.generate
+  );
+  const path = resolve(serviceConfig.generate.dir, `${config.name}.client.ts`);
+  console.log(clientFile);
+  console.log(path);
+
+  await writeFileAsync(path, clientFile);
 
   await broker.destroy();
-  console.log('ended');
 }
