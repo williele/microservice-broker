@@ -1,0 +1,14 @@
+serializer:
+  name: 'arvo'
+transporter:
+  name: 'nats'
+  options:
+    servers:
+      - http://localhost:4444
+
+services:
+  auth:
+    generate:
+      dir: apps/demo/src/generated
+      dependencies:
+        nest:

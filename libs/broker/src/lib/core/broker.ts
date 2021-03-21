@@ -44,6 +44,13 @@ export class Broker {
     this.started = true;
   }
 
+  async destroy() {
+    if (!this.started) return;
+    await this.transporter.disconnect();
+
+    this.started = false;
+  }
+
   /**
    * Create a client
    * @param service

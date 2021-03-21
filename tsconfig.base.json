@@ -16,7 +16,8 @@
     "baseUrl": ".",
     "paths": {
       "@williele/broker": ["libs/broker/src/index.ts"],
-      "@williele/broker-nest": ["libs/nest/src/index.ts"]
+      "@williele/broker-nest": ["libs/nest/src/index.ts"],
+      "@williele/broker-cli": ["libs/cli/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

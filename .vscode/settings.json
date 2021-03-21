@@ -1,6 +1,7 @@
 {
   "conventionalCommits.scopes": [
     "broker",
-    "nest"
+    "nest",
+    "cli"
   ]
 }

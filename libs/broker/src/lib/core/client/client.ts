@@ -76,7 +76,7 @@ export class Client {
     });
   }
 
-  private fetchSchema(parentSpan?: Span) {
+  fetchSchema(parentSpan?: Span) {
     const span = this.tracer.startSpan('fetch schema', { childOf: parentSpan });
 
     return this.requestMethod(

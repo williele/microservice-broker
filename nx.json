@@ -21,6 +21,7 @@
     "nest-demo": { "tags": [] },
     "nest": { "tags": [] },
     "nest-service": { "tags": [] },
-    "nest-gateway": { "tags": [] }
+    "nest-gateway": { "tags": [] },
+    "cli": { "tags": [] }
   }
 }
