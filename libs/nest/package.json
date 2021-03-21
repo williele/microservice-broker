@@ -1,8 +1,8 @@
 {
   "name": "@williele/broker-nest",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.3",
   "peerDependencies": {
-    "@williele/broker": "^0.0.1-alpha",
+    "@williele/broker": "next",
     "@nestjs/common": "^7.0.0",
     "@nestjs/core": "^7.0.0",
     "@nestjs/microservices": "^7.0.0"

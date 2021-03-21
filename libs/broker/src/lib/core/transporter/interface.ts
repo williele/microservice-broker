@@ -1,8 +1,8 @@
-import type { ClientOpts } from 'nats';
+import type { ConnectionOptions } from 'nats';
 
 export interface NatsConfig {
   name: 'nats';
-  options: ClientOpts;
+  options: ConnectionOptions;
 }
 
 export type TransporterConfig = NatsConfig;

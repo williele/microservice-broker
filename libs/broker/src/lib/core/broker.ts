@@ -19,7 +19,10 @@ export class Broker {
 
   constructor(private readonly config: BrokerConfig) {
     this.serviceName = config.serviceName;
-    this.transporter = createTransporter(config.transporter);
+    this.transporter = createTransporter(
+      config.serviceName,
+      config.transporter
+    );
 
     // Initializer tracer
     this.tracer = config.tracer || new Tracer();

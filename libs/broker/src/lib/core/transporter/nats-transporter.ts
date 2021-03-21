@@ -1,96 +1,105 @@
 import { BaseTransporter } from './transporter';
 import { TransportPacket } from '../interface';
-import { ClientOpts, Client, REQ_TIMEOUT } from 'nats';
-import type { Type } from 'avsc';
+import type { ConnectionOptions, NatsConnection, MsgHdrs } from 'nats';
 import { packageLoader } from '../utils/package-loader';
 import { RequestTimeOutError, TransporterError } from '../error';
 
 let nats: typeof import('nats') = undefined;
-let avsc: typeof import('avsc') = undefined;
 
 /**
  * Nats transporter dependencies
- * - msgpack5 (fore encode/decode)
  * - nats
  */
 export class NatsTransporter extends BaseTransporter {
   transporterName = 'nats';
 
-  private client: Client;
-  // private msgpack: MessagePack;
-  private packetType: Type;
+  private connection: NatsConnection;
 
-  constructor(private clientOps: ClientOpts) {
+  constructor(
+    private readonly serviceName: string,
+    private clientOps: ConnectionOptions
+  ) {
     super();
 
     nats = packageLoader('nats', 'NatsTransporter', () => require('nats'));
-    avsc = packageLoader('avsc', 'NatsTransporter', () => require('avsc'));
-
-    this.packetType = avsc.Type.forSchema({
-      name: 'packet',
-      type: 'record',
-      fields: [
-        { name: 'header', type: { type: 'map', values: 'string' } },
-        { name: 'body', type: 'bytes' },
-      ],
-    });
   }
 
   async connect() {
-    if (this.client) return;
+    if (this.connection) return;
 
-    this.client = nats.connect({
+    this.connection = await nats.connect({
       ...this.clientOps,
-      encoding: 'binary',
-      preserveBuffers: true,
     });
 
-    this.client.on('connect', () => this.onConnect());
-    this.client.on('error', (error) => this.onError(error));
-    this.client.on('disconnect', () => this.onDisconnect());
-    this.client.on('reconnect', () => this.onReconnect());
-
-    return new Promise<void>((resolve, reject) => {
-      const connectCb = () => {
-        resolve();
-        completed();
-      };
-
-      const errorCb = (...args) => {
-        reject(...args);
-        completed();
-      };
-
-      const completed = () => {
-        this.client.removeListener('connect', connectCb);
-        this.client.removeListener('error', errorCb);
-      };
-
-      this.client.once('connect', connectCb);
-      this.client.once('error', errorCb);
-    });
+    (async () => {
+      this.onConnect();
+      for await (const s of this.connection.status()) {
+        console.info(`${s.type}: ${s.data}`);
+        switch (s.type) {
+          case nats.Events.Error:
+            this.onError(s.data);
+            break;
+          case nats.Events.Disconnect:
+            this.onDisconnect();
+            break;
+          case nats.Events.Reconnect:
+            this.onReconnect();
+            break;
+          default:
+            break;
+        }
+      }
+    })().then();
   }
 
   async disconnect() {
-    if (!this.client) return;
+    if (!this.connection) return;
 
-    this.client.close();
-    this.client = null;
+    await this.connection.flush();
+    await this.connection.close();
+    this.connection = null;
+  }
+
+  private headers(packetHeaders: Record<string, string>) {
+    const headers = nats.headers();
+    Object.entries(packetHeaders).forEach(([key, value]) => {
+      headers.set(key, value);
+    });
+    return headers;
+  }
+
+  private toHeaders(header: MsgHdrs): Record<string, string> {
+    return Array.from(header).reduce(
+      (obj, [key, value]) =>
+        Object.assign(obj, { [key.toLowerCase()]: value.join('') }),
+      {}
+    );
   }
 
   async subscribe(
     subject: string,
     callback: (packet: TransportPacket, reply?: string) => void
   ) {
-    if (!this.client) {
+    if (!this.connection) {
       await this.connect();
     }
 
-    this.client.subscribe(subject, (message, reply) => {
-      const unpack = this.packetType.fromBuffer(message);
-      if (reply) unpack.header['reply'] = reply;
+    this.connection.subscribe(subject, {
+      queue: `${this.serviceName}_queue`,
+      callback: (err, msg) => {
+        if (err) {
+          console.error(`Transport receive '${subject}' error`, err.message);
+          return;
+        }
 
-      callback(unpack, reply);
+        const header = this.toHeaders(msg.headers);
+        header['reply'] = msg.reply;
+
+        callback({
+          header,
+          body: Buffer.from(msg.data),
+        });
+      },
     });
   }
 
@@ -98,34 +107,37 @@ export class NatsTransporter extends BaseTransporter {
     subject: string,
     packet: TransportPacket
   ): Promise<TransportPacket> {
-    if (!this.client) {
+    if (!this.connection) {
       // Connect before send
       await this.connect();
     }
 
     // Encode into messagepack before send out
-    const pack = this.packetType.toBuffer(packet);
-    return new Promise((resolve, reject) => {
-      this.client.requestOne(subject, pack, 5_000, (response) => {
-        if (response instanceof nats.NatsError) {
-          // if (response.code)
-          if (response.code === REQ_TIMEOUT) {
-            reject(new RequestTimeOutError(response.message));
-          } else {
-            reject(new TransporterError(response.message));
-          }
-        } else {
-          const unpack = this.packetType.fromBuffer(response);
-          resolve(unpack);
-        }
+    try {
+      const h = this.headers(packet.header);
+      const nc = await this.connection.request(subject, packet.body, {
+        timeout: 5_000,
+        headers: h,
       });
-    });
+
+      return {
+        header: this.toHeaders(nc.headers),
+        body: Buffer.from(nc.data),
+      };
+    } catch (err) {
+      switch (err.code) {
+        case nats.ErrorCode.NoResponders:
+          throw new TransporterError('No service is listening');
+        case nats.ErrorCode.Timeout:
+          throw new RequestTimeOutError('Service did not response in time');
+        default:
+          throw new TransporterError(err.message);
+      }
+    }
   }
 
   async send(subject: string, packet: TransportPacket) {
-    return new Promise<void>((resolve) => {
-      const pack = this.packetType.toBuffer(packet);
-      this.client.publish(subject, pack, () => resolve());
-    });
+    const headers = this.headers(packet.header);
+    return this.connection.publish(subject, packet.body, { headers });
   }
 }
