@@ -297,7 +297,7 @@
             "outputPath": "dist/libs/cli",
             "tsConfig": "libs/cli/tsconfig.lib.json",
             "packageJson": "libs/cli/package.json",
-            "updateBuildableProjectDepsInPackageJson": true,
+            "updateBuildableProjectDepsInPackageJson": false,
             "main": "libs/cli/src/index.ts",
             "assets": ["libs/cli/*.md"]
           }

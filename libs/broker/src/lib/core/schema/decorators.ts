@@ -51,7 +51,7 @@ export function Field(order: number, config: SchemaType | { new (...args) }) {
 export function ArrayField(
   order: number,
   items: SchemaType | { new (...args) },
-  config?: Omit<ArrayType, 'type'>
+  config?: Omit<ArrayType, 'type' | 'items'>
 ) {
   let item: SchemaType;
   if (typeof items === 'string') item = { type: items };

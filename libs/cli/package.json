@@ -1,7 +1,18 @@
 {
-  "name": "@williele/broker-cli",
-  "version": "0.0.1-alpha.1",
+  "name": "@williele/broker-cmd",
+  "version": "0.0.1-alpha.0",
+  "author": {
+    "name": "Willie Le",
+    "email": "williele99@gmail.com"
+  },
   "bin": {
     "wibroker": "./src/lib/cli.js"
+  },
+  "peerDependencies": {
+    "@williele/broker": "next"
+  },
+  "dependencies": {
+    "@caporal/core": "^2.0.2",
+    "yaml": "^1.10.2"
   }
 }

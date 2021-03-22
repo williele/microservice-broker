@@ -1,6 +1,10 @@
 {
-  "name": "@williele/broker-nest",
-  "version": "0.0.1-alpha.3",
+  "name": "@williele/broker-nestjs",
+  "version": "0.0.1-alpha.0",
+  "author": {
+    "name": "Willie Le",
+    "email": "williele99@gmail.com"
+  },
   "peerDependencies": {
     "@williele/broker": "next",
     "@nestjs/common": "^7.0.0",
