@@ -27,7 +27,7 @@ export function generateClient(
 
   imports.addImport('@williele/broker', 'ExtractClient', 'Broker');
   if (config.forNest === true) {
-    imports.addImport('@williele/broker-nest', 'InjectBroker');
+    imports.addImport('@williele/broker-nestjs', 'InjectBroker');
     imports.addImport('@nestjs/common', 'Injectable');
   }
 

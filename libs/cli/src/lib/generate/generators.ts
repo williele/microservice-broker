@@ -38,7 +38,7 @@ export class ImportsNode extends Node {
   lines() {
     const imports: string[] = [];
     this.imports.forEach((pack, name) => {
-      imports.push(`import { ${Array.from(pack).join(', ')} } from '${name}'`);
+      imports.push(`import { ${Array.from(pack).join(', ')} } from '${name}';`);
     });
 
     return imports;
