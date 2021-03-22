@@ -5,6 +5,10 @@ import { DemoInput, DemoListInput, DemoListOutput, DemoOutput } from './model';
 
 @Service('main')
 export class AppService {
+  sayHello(name: string): DemoOutput {
+    return { message: `hello ${name}!` };
+  }
+
   @Method({
     request: NullRecord.name,
     response: NullRecord.name,
@@ -20,7 +24,8 @@ export class AppService {
     tracing: true,
   })
   hello(ctx: Context<DemoInput>): DemoOutput {
-    return { message: `hello ${ctx.body.name}` };
+    // return { message: `hello ${ctx.body.name}` };
+    return this.sayHello(ctx.body.name);
   }
 
   @Method({

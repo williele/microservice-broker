@@ -98,12 +98,15 @@ export class BrokerBuilderService implements OnModuleInit {
     );
     if (!method) return;
 
+    // Bind method instance
+    const methodHandler = handle.bind(provider.instance);
+
     const config: AddMethodConfig = {
       ...method,
       name: method.name || name,
       middlewares: await this.configMiddleware(handle, provider),
       handler: async (ctx) => {
-        const result = await handle(ctx);
+        const result = await methodHandler(ctx);
         ctx.response(result ?? null);
       },
     };
