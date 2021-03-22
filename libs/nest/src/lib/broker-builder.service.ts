@@ -81,7 +81,7 @@ export class BrokerBuilderService implements OnModuleInit {
     const methods = [];
     for (const { name, handler, provider } of methodConfigs) {
       const method = await this.configMethod(name, handler, provider);
-      methods.push(method);
+      if (method) methods.push(method);
     }
 
     return methods;
