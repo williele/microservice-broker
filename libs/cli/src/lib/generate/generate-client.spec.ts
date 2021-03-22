@@ -33,7 +33,7 @@ describe('Generate client', () => {
       },
     };
 
-    await generateClient(
+    const text = await generateClient(
       'demo',
       {
         serializer: 'arvo',
@@ -56,5 +56,7 @@ describe('Generate client', () => {
         dependencies: {},
       }
     );
+
+    console.log(text);
   });
 });

@@ -116,6 +116,7 @@ export class Server {
     const ctx: Context = Object.create(this._context);
     ctx.packet = packet;
     ctx.res = Object.create(this._response);
+    ctx.res.header = Object.create(this._response.header);
 
     // Initialize request span
     ctx.span = this.broker.tracer.extract(FORMAT_HTTP_HEADERS, packet.header);
