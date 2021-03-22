@@ -15,6 +15,9 @@ export enum BrokerErrorCode {
   VALIDATE = 'ValidateError',
   BAD_REQUEST = 'BadRequest',
   BAD_RESPONSE = 'BadResponse',
+  NOT_FOUND = 'NotFoundError',
+  UNAUTHORIZATION = 'AuthorizationError',
+  FORBIDDEN = 'ForbiddenError',
 }
 
 export class BrokerError extends Error {
@@ -49,6 +52,12 @@ export class BrokerError extends Error {
         return new BadRequestError(message);
       case BrokerErrorCode.BAD_RESPONSE:
         return new BadResponseError(message);
+      case BrokerErrorCode.NOT_FOUND:
+        return new NotFoundError(message);
+      case BrokerErrorCode.UNAUTHORIZATION:
+        return new UnauthorizationError(message);
+      case BrokerErrorCode.FORBIDDEN:
+        return new ForbiddenError(message);
 
       default:
         return new InternalError('Unknow error');
@@ -107,10 +116,10 @@ export class ValidateError extends BrokerError {
     super(BrokerErrorCode.VALIDATE, message);
   }
 
-  static fields(...fields: { field: string; constrain: string }[]) {
-    const message = fields
-      .map(({ field, constrain }) => `${field}:${constrain}`)
-      .join(';');
+  static fields(fields: Record<string, string>) {
+    const message = Object.entries(fields)
+      .map(([name, constrain]) => `${name}:${constrain}`)
+      .join('|');
 
     return new ValidateError(`f>${message}`);
   }
@@ -127,5 +136,27 @@ export class BadRequestError extends BrokerError {
 export class BadResponseError extends BrokerError {
   constructor(message: string) {
     super(BrokerErrorCode.VALIDATE, message);
+  }
+}
+
+export class NotFoundError extends BrokerError {
+  constructor(message: string) {
+    super(BrokerErrorCode.NOT_FOUND, message);
+  }
+
+  static resource(resource: string, identify: string) {
+    return new NotFoundError(`Resource '${resource}' ${identify} not found`);
+  }
+}
+
+export class UnauthorizationError extends BrokerError {
+  constructor(message: string) {
+    super(BrokerErrorCode.UNAUTHORIZATION, message);
+  }
+}
+
+export class ForbiddenError extends BrokerError {
+  constructor(message: string) {
+    super(BrokerErrorCode.FORBIDDEN, message);
   }
 }
