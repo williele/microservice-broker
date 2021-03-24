@@ -1,6 +1,7 @@
 import type {
+  MethodInfo,
+  NamedRecordType,
   SerializerConfig,
-  ServiceSchema,
   TransporterConfig,
 } from '@williele/broker';
 
@@ -35,7 +36,16 @@ export interface BrokerCLIConfig {
 }
 
 export interface LocalServiceSchema {
+  generate?: {
+    output: string;
+  };
   dependencies: {
-    [name: string]: { serviceName: string } & ServiceSchema;
+    [name: string]: {
+      serviceName: string;
+      serializer: string;
+      transporter: string;
+      types: Record<string, NamedRecordType>;
+      methods: Record<string, MethodInfo>;
+    };
   };
 }

@@ -51,6 +51,12 @@ const defsSchema = {
         serviceName: { type: 'string' },
         source: { type: 'string' },
         schema: { type: 'string' },
+        generate: {
+          properties: {
+            output: { type: 'string' },
+          },
+          required: ['output'],
+        },
         dependencies: {
           type: 'object',
           patternProperties: {

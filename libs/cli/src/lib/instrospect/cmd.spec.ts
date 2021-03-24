@@ -12,32 +12,21 @@ describe('Introspect', () => {
             options: { servers: ['http://localhost:4444'] },
           },
         },
-        core: {
-          serializer: 'arvo',
-          transporter: {
-            name: 'nats',
-            options: { servers: ['http://localhost:4222'] },
-          },
-        },
-      },
-      externals: {
-        user: {
-          source: 'core',
-        },
       },
       services: {
         nest_gateway: {
           serviceName: 'gateway',
-          schema: 'apps/nest-gateway/broker-schema.json',
+          schema: 'tmp/nest-gateway/broker-schema.json',
+          generate: {
+            output: 'node_module/.broker/nest_gateway',
+          },
           dependencies: {
-            nest_service: {
-              alias: 'nest',
-            },
+            nest_service: { alias: 'nest' },
           },
         },
         nest_service: {
           serviceName: 'nest',
-          schema: 'apps/nest-service/broker-schema.json',
+          schema: 'tmp/nest-service/broker-schema.json',
         },
       },
     });

@@ -19,5 +19,9 @@ export interface ExternalService extends BaseService {
 
 export interface LocalService extends BaseService {
   type: 'local';
+  schema: string;
+  generate?: {
+    output: string;
+  };
   dependencies: Record<string, string>;
 }

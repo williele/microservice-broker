@@ -23,6 +23,8 @@ services:
   nest_gateway:
     schema: 'apps/nest-gateway/broker-schema.json'
     source: 'default'
+    generate:
+      output: 'node_modules/.broker/nest_gateway'
     dependencies:
       nest_service:
         alias: 'nest'

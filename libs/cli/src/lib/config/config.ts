@@ -50,6 +50,8 @@ export class Configure {
       const cfg = config as {
         serviceName?: string;
         source?: string;
+        schema: string;
+        generate?: { output: string };
         dependencies?: Record<string, { alias: string }>;
       };
 
@@ -64,6 +66,8 @@ export class Configure {
       this.services[name] = {
         type: 'local',
         serviceName: cfg.serviceName || name,
+        schema: cfg.schema,
+        generate: cfg.generate,
         source: this.sources[source],
         dependencies: cfg.dependencies
           ? Object.entries(cfg.dependencies).reduce(

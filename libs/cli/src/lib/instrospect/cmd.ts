@@ -1,5 +1,7 @@
 import { Logger } from '@caporal/core';
 import { Broker } from '@williele/broker';
+import { promises } from 'fs';
+import * as path from 'path';
 import { Configure } from '../config';
 import { Service, Source } from '../config/interface';
 import { LocalServiceSchema } from '../interface';
@@ -35,7 +37,6 @@ export async function writeServiceSchema(
   if (service.type !== 'local') return;
   // Inspecting service
   logger?.notice(`Inspecting ${service.serviceName}`);
-  console.log(`Inspecting ${service.serviceName}`);
 
   const brokers: Record<string, Broker> = {};
   async function getBroker(source: Source) {
@@ -59,6 +60,7 @@ export async function writeServiceSchema(
   }
 
   const schema: LocalServiceSchema = {
+    generate: service.generate,
     dependencies: {},
   };
 
@@ -82,12 +84,24 @@ export async function writeServiceSchema(
 
     schema.dependencies[name] = {
       serviceName: target.serviceName,
-      ...targetSchema,
+      serializer: targetSchema.serializer,
+      transporter: targetSchema.transporter,
+      types: Object.entries(targetSchema.types).reduce(
+        (a, [name, config]) => ({ ...a, [name]: JSON.parse(config) }),
+        {}
+      ),
+      methods: targetSchema.methods,
     };
   }
 
-  // Clean up broker
-  console.log(service.serviceName, JSON.stringify(schema, null, 2));
+  // Create directory
+  const generatedDir = path.dirname(service.schema);
+  await promises.mkdir(generatedDir, { recursive: true });
+  await promises.writeFile(
+    path.join(service.schema),
+    JSON.stringify(schema, null, 2)
+  );
 
+  // Clean up broker
   await destroyAll();
 }
