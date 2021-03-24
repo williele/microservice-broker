@@ -20,14 +20,14 @@ externals:
     source: 'candis'
 
 services:
-  nest-gateway:
+  nest_gateway:
     schema: 'apps/nest-gateway/broker-schema.json'
     source: 'default'
     dependencies:
-      nest:
-        alias: 'default'
+      nest_service:
+        alias: 'nest'
 
-  nest-service:
+  nest_service:
     serviceName: 'nest'
     source: 'default'
     schema: 'apps/nest-service/broker-schema.json'

@@ -1,0 +1,9 @@
+{
+  "serviceName": "nest-gateway",
+  "dependencies": {
+    "nest": {
+      "types": {},
+      "methods": {}
+    }
+  }
+}

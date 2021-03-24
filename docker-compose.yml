@@ -3,9 +3,10 @@ version: '3'
 services:
   nats:
     image: nats:2.2.0-scratch
-    command: -p 4444
+    command: -p 4444 -m 8888
     ports:
       - 4444:4444
+      - 8888:8888
 
   # jaeger:
   #   image: jaegertracing/all-in-one:1.7

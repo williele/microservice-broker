@@ -1,4 +1,8 @@
-import { SerializerConfig, TransporterConfig } from '@williele/broker';
+import type {
+  SerializerConfig,
+  ServiceSchema,
+  TransporterConfig,
+} from '@williele/broker';
 
 export interface DependencyConfig {
   name: string;
@@ -27,5 +31,11 @@ export interface BrokerCLIConfig {
 
   services: {
     [name: string]: ServiceConfig;
+  };
+}
+
+export interface LocalServiceSchema {
+  dependencies: {
+    [name: string]: { serviceName: string } & ServiceSchema;
   };
 }

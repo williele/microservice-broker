@@ -1,4 +1,5 @@
-import type { SerializerConfig, TransporterConfig } from '@williele/broker';
+import { Broker, SerializerConfig, TransporterConfig } from '@williele/broker';
+import { readFileSync } from 'fs';
 import { Service, Source } from './interface';
 import { validate } from './validate';
 
@@ -66,11 +67,28 @@ export class Configure {
         source: this.sources[source],
         dependencies: cfg.dependencies
           ? Object.entries(cfg.dependencies).reduce(
-              (a, [name, config]) => ({ ...a, [name]: config.alias }),
+              (a, [name, config]) => ({ ...a, [config.alias || name]: name }),
               {}
             )
           : {},
       };
     });
+  }
+
+  static fromFile(file: string) {
+    const config = readFileSync(file, 'utf8');
+    return new Configure(config);
+  }
+
+  async createBorker(serviceName: string, source: Source) {
+    const broker = new Broker({
+      serviceName,
+      serializer: { name: source.serializer },
+      transporter: source.transporter,
+      disableServer: true,
+    });
+
+    await broker.start();
+    return broker;
   }
 }
