@@ -22,8 +22,18 @@ abstract class Node {
   }
 }
 
+export class RawNode extends Node {
+  constructor(public readonly text: string) {
+    super();
+  }
+  lines() {
+    return this.text.split('\n');
+  }
+}
+
 export class ImportsNode extends Node {
   readonly imports: Map<string, Set<string>> = new Map();
+  isJs = false;
 
   addImport(pack: string, ...items: string[]) {
     let itemSet = this.imports.get(pack);
@@ -37,9 +47,19 @@ export class ImportsNode extends Node {
 
   lines() {
     const imports: string[] = [];
-    this.imports.forEach((pack, name) => {
-      imports.push(`import { ${Array.from(pack).join(', ')} } from '${name}';`);
-    });
+    if (this.isJs) {
+      this.imports.forEach((pack, name) => {
+        imports.push(
+          `const { ${Array.from(pack).join(', ')} } = require('${name}');`
+        );
+      });
+    } else {
+      this.imports.forEach((pack, name) => {
+        imports.push(
+          `import { ${Array.from(pack).join(', ')} } from '${name}';`
+        );
+      });
+    }
 
     return imports;
   }
@@ -53,11 +73,17 @@ abstract class SymbolNode extends Node {
 }
 
 export class TypeNode extends SymbolNode {
+  public readonly generics: SymbolNode[] = [];
+
   constructor(public text: string) {
     super();
   }
   lines() {
-    return [this.text];
+    let type = this.text;
+    if (this.generics.length)
+      type += `<${this.generics.map((g) => g.value()).join(', ')}>`;
+
+    return [type];
   }
 }
 
@@ -124,7 +150,7 @@ export class CallFunctionNode extends ExpressionNode {
 export class AssignmentNode extends Node {
   constructor(
     public variable: VariableNode,
-    public expression: ExpressionNode
+    public expression?: ExpressionNode
   ) {
     super();
   }
@@ -132,7 +158,8 @@ export class AssignmentNode extends Node {
   lines() {
     const lines = this.variable.lines();
     const last = lines.length - 1;
-    lines[last] = `${lines[last]} = ${this.expression.value()}`;
+    if (this.expression)
+      lines[last] = `${lines[last]} = ${this.expression.value()}`;
 
     return lines;
   }
@@ -141,11 +168,17 @@ export class AssignmentNode extends Node {
 // Define
 export abstract class DefineNode extends Node {
   export = false;
+  declare = false;
+  isJS = false;
 
   lines() {
     const lines = super.lines();
-    if (this.export) lines.push('export ');
-    else lines.push('');
+    let initLine = '';
+    if (!this.isJS) {
+      if (this.export) initLine += 'export ';
+      if (this.declare) initLine += 'declare ';
+    }
+    lines.push(initLine);
 
     return lines;
   }
@@ -162,9 +195,11 @@ export class FunctionNode extends DefineNode {
   lines() {
     const lines = super.lines();
     const last = lines.length - 1;
-    lines[last] = `${this.name}(${this.arguments
+    let initLine = `${this.name}(${this.arguments
       .map((a) => a.lines().join(''))
-      .join(', ')}) {`;
+      .join(', ')})`;
+    if (!this.declare) initLine += ' {';
+    lines[last] = initLine;
 
     this.blocks.forEach((block) => {
       const blockLines = block.lines();
@@ -176,7 +211,10 @@ export class FunctionNode extends DefineNode {
       );
     });
 
-    return [...lines, '}'];
+    if (this.declare) {
+      lines[lines.length - 1] += ';';
+      return lines;
+    } else return [...lines, '}'];
   }
 }
 
@@ -237,6 +275,9 @@ export class ClassNode extends DefineNode {
     lines[last] = `${lines[last]}class ${this.name}${
       this.extend ? ` extends ${this.extend}` : ''
     } {`;
+    if (this.isJS && this.export) {
+      lines[last] = `exports.${this.name} = ${lines[last]}`;
+    }
 
     // Properties
     this.properties.forEach((props) => {
@@ -262,9 +303,11 @@ export class ClassNode extends DefineNode {
 }
 
 export class ClassPropertyNode extends AssignmentNode {
+  isJs = false;
+
   constructor(
     variable: VariableNode,
-    expression: ExpressionNode,
+    expression?: ExpressionNode,
     public accessor: ClassAccessor = 'public'
   ) {
     super(variable, expression);
@@ -273,7 +316,7 @@ export class ClassPropertyNode extends AssignmentNode {
   lines() {
     const lines = super.lines();
     const last = lines.length - 1;
-    lines[last] = `${this.accessor} ${lines[last]}`;
+    if (!this.isJs) lines[last] = `${this.accessor} ${lines[last]}`;
 
     return lines;
   }

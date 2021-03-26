@@ -13,42 +13,34 @@ export async function introspectCmd(
   logger?: Logger
 ) {
   try {
-    const config = Configure.fromFile(options.configFile);
-    await introspect(config, options.configFile, logger);
+    const config = new Configure(options.configFile, logger);
+    await introspect(config);
   } catch (err) {
-    logger.error(err.message);
+    logger?.error(err.message);
     process.exit(1);
   }
 }
 
-export async function introspect(
-  config: Configure,
-  configFile: string,
-  logger?: Logger
-) {
+export async function introspect(config: Configure) {
   // Get config introspect
   for (const service of Object.values(config.services)) {
     if (service.type !== 'local') continue;
-    const schema = await createServiceSchema(config, service, logger);
+    const schema = await createServiceSchema(config, service);
 
-    writeServiceSchema(service, schema, path.dirname(configFile), logger);
+    writeServiceSchema(config, service, schema);
   }
 }
 
-export async function createServiceSchema(
-  configure: Configure,
-  service: LocalService,
-  logger?: Logger
-) {
+async function createServiceSchema(config: Configure, service: LocalService) {
   if (service.type !== 'local') return;
   // Inspecting service
-  logger?.info(`Inspecting ${service.serviceName}`);
+  config.logger?.info(`Inspecting ${service.serviceName}`);
 
   const brokers: Record<string, Broker> = {};
   async function getBroker(source: Source) {
     if (!brokers[source.name]) {
-      logger?.info(`Connect broker '${source.name}'`);
-      const broker = await configure
+      config.logger?.info(`Connect broker '${source.name}'`);
+      const broker = await config
         .createBorker(service.serviceName, source)
         .catch(async (err) => {
           await destroyAll();
@@ -66,7 +58,6 @@ export async function createServiceSchema(
   }
 
   const schema: LocalServiceSchema = {
-    generate: service.generate,
     dependencies: {},
   };
 
@@ -76,7 +67,7 @@ export async function createServiceSchema(
     // Dependency is keyword of services Records
     if (schema.dependencies[name])
       throw new TypeError(`Dependency alias '${name}' is duplicated`);
-    const target = configure.services[dependency];
+    const target = config.services[dependency];
     if (!target) throw new TypeError(`Dependency '${dependency}' is not found`);
 
     // Fetch schema
@@ -105,20 +96,19 @@ export async function createServiceSchema(
   return schema;
 }
 
-export function writeServiceSchema(
+function writeServiceSchema(
+  config: Configure,
   service: LocalService,
-  schema: LocalServiceSchema,
-  configFileDir: string,
-  logger?: Logger
+  schema: LocalServiceSchema
 ) {
   const generatedDir = path.dirname(service.schema);
   mkdirSync(generatedDir, { recursive: true });
   writeFileSync(
-    path.resolve(configFileDir, service.schema),
+    config.resolve(service.schema),
     JSON.stringify(schema, null, 2)
   );
 
-  logger?.info(
+  config.logger?.info(
     `Write service schem '${service.serviceName}' to ${service.schema}`
   );
 }

@@ -36,9 +36,6 @@ export interface BrokerCLIConfig {
 }
 
 export interface LocalServiceSchema {
-  generate?: {
-    output: string;
-  };
   dependencies: {
     [name: string]: {
       serviceName: string;

@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { NestClient } from './shared/nest.client';
+import { NestService } from './shared/nest.service';
 
 function toNumber(val: string, def: number) {
   if (isNaN(Number(val))) return def;
@@ -8,7 +8,7 @@ function toNumber(val: string, def: number) {
 
 @Controller()
 export class AppController {
-  constructor(private readonly nestClient: NestClient) {}
+  constructor(private readonly nestClient: NestService) {}
 
   @Get()
   getData() {

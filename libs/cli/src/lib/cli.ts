@@ -7,19 +7,33 @@ import { introspectCmd } from './instrospect';
 program
   .command('generate', 'Generate service dependencies client')
   .alias('g')
-  .argument('<config>', 'Path to config file', { default: 'broker.yml' })
-  .action(async ({ args }) => {
-    await generateCmd(args['config'].toString());
+  .option('-c, --config <file>', 'Path of config file', {
+    required: true,
+    default: 'broker.yml',
+    validator: program.STRING,
+  })
+  .option('-s, --services <services...>', 'Service(s) to generate', {
+    validator: program.ARRAY | program.STRING,
+  })
+  .action(async ({ options, logger }) => {
+    await generateCmd(
+      {
+        configFile: options['config'].toString(),
+        services: options['services'] as string[],
+      },
+      logger
+    );
   });
 
 program
   .command('introspect', 'Get schema of dependecies')
+  .alias('i')
   .option('-c, --config <file>', 'Path of config file', {
     required: true,
     default: 'broker.yml',
   })
   .action(async ({ options, logger }) => {
-    await introspectCmd({ configFile: options['config'] as string }, logger);
+    await introspectCmd({ configFile: options['config'].toString() }, logger);
   });
 
 program.run();

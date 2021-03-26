@@ -1,5 +1,6 @@
 import { Span } from 'opentracing';
 import { Broker } from '../broker';
+import { ExtractClientMethod } from '../interface';
 import { ServiceSchema } from '../server';
 import { Client } from './client';
 
@@ -20,7 +21,9 @@ export class ExtractClient {
     if (schema) this.client.setSchema(schema);
   }
 
-  protected createMethod<I = unknown, O = unknown>(name: string) {
+  protected createMethod<I = unknown, O = unknown>(
+    name: string
+  ): ExtractClientMethod<I, O> {
     return (input: I, span?: Span) => this.client.call<O>(name, input, span);
   }
 }

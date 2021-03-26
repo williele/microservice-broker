@@ -1,7 +1,8 @@
 import { Broker, SerializerConfig, TransporterConfig } from '@williele/broker';
 import { readFileSync } from 'fs';
-import { extname } from 'path';
+import { dirname, extname, resolve } from 'path';
 import { parse } from 'yaml';
+import { Logger } from '@caporal/core';
 import { Service, Source } from './interface';
 import { validate } from './validate';
 
@@ -9,7 +10,29 @@ export class Configure {
   readonly sources: Record<string, Source> = {};
   readonly services: Record<string, Service> = {};
 
-  constructor(config) {
+  readonly configDir: string;
+
+  constructor(configFile: string, public readonly logger?: Logger) {
+    // Load file
+    const context = readFileSync(configFile, 'utf8');
+    let config;
+    switch (extname(configFile)) {
+      case '.yaml':
+      case '.yml':
+        config = parse(context);
+        break;
+
+      case '.json':
+        config = JSON.parse(context);
+        break;
+
+      default:
+        throw new TypeError(`Unknown config file extension`);
+    }
+
+    // config dir
+    this.configDir = dirname(configFile);
+
     const valid = validate(config);
     if (!valid)
       throw new TypeError(
@@ -18,6 +41,12 @@ export class Configure {
           .join('|')}`
       );
 
+    this.getSources(config);
+    this.getExternal(config);
+    this.getLocal(config);
+  }
+
+  private getSources(config) {
     // Config source
     Object.entries(config.sources || {}).forEach(([name, config]) => {
       const { serializer, transporter } = config as {
@@ -26,7 +55,9 @@ export class Configure {
       };
       this.sources[name] = { name, serializer, transporter };
     });
+  }
 
+  private getExternal(config) {
     // Config external services
     Object.entries(config.externals || {}).forEach(([name, config]) => {
       const cfg = config as {
@@ -46,7 +77,9 @@ export class Configure {
         source: this.sources[source],
       };
     });
+  }
 
+  private getLocal(config) {
     // Config local services
     Object.entries(config.services || {}).forEach(([name, config]) => {
       const cfg = config as {
@@ -81,26 +114,6 @@ export class Configure {
     });
   }
 
-  /**
-   * Read file and create new configure
-   * @param file yaml file
-   * @returns
-   */
-  static fromFile(file: string) {
-    const fileContext = readFileSync(file, 'utf8');
-    switch (extname(file)) {
-      case '.yaml':
-      case '.yml':
-        return new Configure(parse(fileContext));
-
-      case '.json':
-        return new Configure(JSON.parse(fileContext));
-
-      default:
-        throw new TypeError(`Unknown config file extension`);
-    }
-  }
-
   async createBorker(serviceName: string, source: Source) {
     const broker = new Broker({
       serviceName,
@@ -111,5 +124,9 @@ export class Configure {
 
     await broker.start();
     return broker;
+  }
+
+  resolve(path: string) {
+    return resolve(this.configDir, path);
   }
 }
