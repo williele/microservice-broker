@@ -104,6 +104,7 @@ function generateClient(
   // Script class
   const sNode = new ClassNode(className, 'ExtractClient');
   sNode.isJS = true;
+  sNode.export = true;
   sNode.declare = true;
 
   // Comment
