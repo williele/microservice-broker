@@ -6,21 +6,10 @@ sources:
       options:
         servers:
           - 'http://localhost:4444'
-  canary:
-    serializer: 'arvo'
-    transporter:
-      name: 'nats'
-      options:
-        servers:
-          - 'http://wifood.sytes.net/nats'
-
-# external services
-externals:
-  user:
-    source: 'candis'
 
 services:
   nest_gateway:
+    serviceName: 'gateway'
     schema: 'apps/nest-gateway/broker-schema.json'
     source: 'default'
     generate:

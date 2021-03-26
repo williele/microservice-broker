@@ -1,47 +1,53 @@
 import { Logger } from '@caporal/core';
 import { Broker } from '@williele/broker';
-import { promises } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { Configure } from '../config';
-import { Service, Source } from '../config/interface';
+import { LocalService, Source } from '../config/interface';
 import { LocalServiceSchema } from '../interface';
 
 export async function introspectCmd(
   options: {
-    config: string;
+    configFile: string;
   },
-  logger: Logger
+  logger?: Logger
 ) {
   try {
-    const config = Configure.fromFile(options.config);
-    await introspect(config, logger);
+    const config = Configure.fromFile(options.configFile);
+    await introspect(config, options.configFile, logger);
   } catch (err) {
     logger.error(err.message);
     process.exit(1);
   }
 }
 
-export async function introspect(config: Configure, logger?: Logger) {
+export async function introspect(
+  config: Configure,
+  configFile: string,
+  logger?: Logger
+) {
   // Get config introspect
   for (const service of Object.values(config.services)) {
     if (service.type !== 'local') continue;
-    await writeServiceSchema(config, service, logger);
+    const schema = await createServiceSchema(config, service, logger);
+
+    writeServiceSchema(service, schema, path.dirname(configFile), logger);
   }
 }
 
-export async function writeServiceSchema(
+export async function createServiceSchema(
   configure: Configure,
-  service: Service,
+  service: LocalService,
   logger?: Logger
 ) {
   if (service.type !== 'local') return;
   // Inspecting service
-  logger?.notice(`Inspecting ${service.serviceName}`);
+  logger?.info(`Inspecting ${service.serviceName}`);
 
   const brokers: Record<string, Broker> = {};
   async function getBroker(source: Source) {
     if (!brokers[source.name]) {
-      logger?.notice(`Connect broker '${source.name}'`);
+      logger?.info(`Connect broker '${source.name}'`);
       const broker = await configure
         .createBorker(service.serviceName, source)
         .catch(async (err) => {
@@ -94,14 +100,25 @@ export async function writeServiceSchema(
     };
   }
 
-  // Create directory
+  // Clean up broker
+  await destroyAll();
+  return schema;
+}
+
+export function writeServiceSchema(
+  service: LocalService,
+  schema: LocalServiceSchema,
+  configFileDir: string,
+  logger?: Logger
+) {
   const generatedDir = path.dirname(service.schema);
-  await promises.mkdir(generatedDir, { recursive: true });
-  await promises.writeFile(
-    path.join(service.schema),
+  mkdirSync(generatedDir, { recursive: true });
+  writeFileSync(
+    path.resolve(configFileDir, service.schema),
     JSON.stringify(schema, null, 2)
   );
 
-  // Clean up broker
-  await destroyAll();
+  logger?.info(
+    `Write service schem '${service.serviceName}' to ${service.schema}`
+  );
 }

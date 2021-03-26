@@ -14,10 +14,12 @@ program
 
 program
   .command('introspect', 'Get schema of dependecies')
-  .option('config', 'Config file', { required: true, default: 'broker.yml' })
+  .option('-c, --config <file>', 'Path of config file', {
+    required: true,
+    default: 'broker.yml',
+  })
   .action(async ({ options, logger }) => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await introspectCmd(options['config'] as any, logger);
+    await introspectCmd({ configFile: options['config'] as string }, logger);
   });
 
 program.run();

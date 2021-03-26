@@ -1,5 +1,7 @@
 import { Broker, SerializerConfig, TransporterConfig } from '@williele/broker';
 import { readFileSync } from 'fs';
+import { extname } from 'path';
+import { parse } from 'yaml';
 import { Service, Source } from './interface';
 import { validate } from './validate';
 
@@ -79,9 +81,24 @@ export class Configure {
     });
   }
 
+  /**
+   * Read file and create new configure
+   * @param file yaml file
+   * @returns
+   */
   static fromFile(file: string) {
-    const config = readFileSync(file, 'utf8');
-    return new Configure(config);
+    const fileContext = readFileSync(file, 'utf8');
+    switch (extname(file)) {
+      case '.yaml':
+      case '.yml':
+        return new Configure(parse(fileContext));
+
+      case '.json':
+        return new Configure(JSON.parse(fileContext));
+
+      default:
+        throw new TypeError(`Unknown config file extension`);
+    }
   }
 
   async createBorker(serviceName: string, source: Source) {
