@@ -13,7 +13,7 @@ export interface BrokerConfig {
   disableServer?: boolean;
 }
 
-export type UsableRecord = NamedRecordType | string | { new (...args) };
+export type RecordDefinition = NamedRecordType | string | { new (...args) };
 
 export interface TransportPacket {
   header: Record<string, string>;

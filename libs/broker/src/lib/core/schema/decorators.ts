@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { SchemaError } from '../error';
 import { ArrayType, BaseType, NamedRecordType, SchemaType } from './interface';
 
@@ -12,7 +13,6 @@ export function Record(config?: BaseType) {
   return function (constructor: NewableFunction) {
     const record: NamedRecordType = {
       name: config?.name || constructor.name,
-      type: 'record',
       fields: Reflect.getMetadata(FIELDS, constructor) || {},
       ...config,
     };

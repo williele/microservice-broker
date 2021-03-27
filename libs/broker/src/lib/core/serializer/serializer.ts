@@ -1,7 +1,7 @@
 import { Span, Tags } from 'opentracing';
 import { SchemaError, SerializerError } from '../error';
-import { UsableRecord } from '../interface';
-import { NamedRecordType, validateNamedRecord } from '../schema';
+import { RecordDefinition } from '../interface';
+import { NamedRecordType, verifyNamedRecord } from '../schema';
 import { getRecordData } from '../schema/decorators';
 import { verifyName } from '../utils/verify-name';
 import { NullRecord, ServiceSchemaRecord } from './default';
@@ -36,7 +36,7 @@ export abstract class BaseSerializer {
    * return record name
    * @param type
    */
-  record(type: UsableRecord): string {
+  record(type: RecordDefinition): string {
     // As pointer to record store
     if (typeof type === 'string') {
       // Record input is string, cannot add definition
@@ -68,7 +68,7 @@ export abstract class BaseSerializer {
 
     // As schema definition
     else {
-      if (!validateNamedRecord(type))
+      if (!verifyNamedRecord(type))
         throw new SerializerError(`Invalid record definition`);
 
       if (defaultNames.includes(type.name)) return type.name;

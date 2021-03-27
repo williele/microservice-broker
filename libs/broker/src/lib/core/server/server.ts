@@ -14,6 +14,7 @@ import {
   ConfigError,
   HandlerUnimplementError,
 } from '../error';
+import { NamedRecordType } from '../schema';
 
 interface MethodInfo {
   request: string;
@@ -34,13 +35,14 @@ export class Server {
   private _context: Context;
   private _response: Response;
 
+  private _records: Record<string, NamedRecordType> = {};
+
   constructor(
     public readonly broker: Broker,
-    serializerConfig: SerializerConfig
+    serializerConfig: SerializerConfig,
+    private readonly records?: NamedRecordType[]
   ) {
     this.serializer = createSerializer(serializerConfig);
-    // Default type
-    this.serializer.record({ name: 'Null', type: 'record', fields: {} });
 
     // Default context
     this._context = Object.create({
