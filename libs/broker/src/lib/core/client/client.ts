@@ -71,7 +71,7 @@ export class Client {
 
     // Parsing serializer
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Object.values(this.schema.types).forEach((type: any) => {
+    Object.values(this.schema.records).forEach((type: any) => {
       this.serializer.record(JSON.parse(type));
     });
   }

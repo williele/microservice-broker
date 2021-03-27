@@ -1,5 +1,5 @@
 import { BaseSerializer } from './serializer';
-import { SchemaType } from '../schema';
+import { RecordStorage, SchemaType } from '../schema';
 import type { Type, Schema } from 'avsc';
 import { packageLoader } from '../utils/package-loader';
 import { ArvoSerializerConfig } from './interface';
@@ -18,8 +18,8 @@ export class ArvoSerializer extends BaseSerializer {
   private cache: Record<string, Type> = {};
   private cacheSchema: Record<string, Schema> = {};
 
-  constructor(config: ArvoSerializerConfig) {
-    super(config);
+  constructor(config: ArvoSerializerConfig, storage: RecordStorage) {
+    super(config, storage);
 
     avsc = packageLoader('avsc', 'ArvoSerializer', () => require('avsc'));
 
@@ -44,10 +44,10 @@ export class ArvoSerializer extends BaseSerializer {
   private getCache(name: string): Type {
     if (this.cache[name]) return this.cache[name];
     else {
-      const schema = this.getRecord(name);
+      const schema = this.storage.get(name);
 
       // Create Type and validator
-      const transformed = this.schemaTransform(schema);
+      const transformed = this.schemaTransform({ type: 'record', ...schema });
       const arvo = avsc.Type.forSchema(transformed, {
         logicalTypes: {
           // Custom logical name
@@ -165,12 +165,15 @@ export class ArvoSerializer extends BaseSerializer {
         // User cache
         arvo = cache;
       } else {
-        if (!this.hasRecord(sc.pointer)) {
+        if (!this.storage.has(sc.pointer)) {
           throw new SchemaError(`Failed to get pointer type '${sc.pointer}'`);
         }
 
-        const schema = this.getRecord(sc.pointer);
-        const type = this.schemaTransform(schema, undefined);
+        const schema = this.storage.get(sc.pointer);
+        const type = this.schemaTransform(
+          { type: 'record', ...schema },
+          undefined
+        );
 
         // save to cache
         this.cacheSchema[sc.pointer] = type;

@@ -1,4 +1,3 @@
-import { NamedRecordType } from './schema/interface';
 import { TransporterConfig } from './transporter';
 import { SerializerConfig } from './serializer';
 import type { Tracer, Span } from 'opentracing';
@@ -12,8 +11,6 @@ export interface BrokerConfig {
    */
   disableServer?: boolean;
 }
-
-export type RecordDefinition = NamedRecordType | string | { new (...args) };
 
 export interface TransportPacket {
   header: Record<string, string>;

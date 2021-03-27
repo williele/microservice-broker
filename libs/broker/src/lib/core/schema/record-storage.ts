@@ -1,19 +1,33 @@
 import { SchemaError } from '../error';
-import { verifyName } from '../utils/verify-name';
 import { getRecordData } from './decorators';
 import { NamedRecordType, RecordDefinition } from './interface';
-import { verifyNamedRecord } from './validator';
+import { verifyRecord } from './validator';
 
 /**
  * Storage of records
  */
 export class RecordStorage {
-  private readonly records: Record<string, NamedRecordType> = {};
-  private readonly recordClasses: Record<string, unknown> = {};
+  private readonly _records: Record<string, NamedRecordType> = {};
+  private readonly _recordClasses: Record<string, unknown> = {};
+
+  get records() {
+    return this._records;
+  }
+
+  private verified = false;
 
   constructor(records: RecordDefinition[]) {
     // Default records
     records.forEach((record) => this.add(record));
+  }
+
+  /**
+   * Check if record name is exists
+   * @param name
+   * @returns
+   */
+  has(name: string) {
+    return !!this._records[name];
   }
 
   /**
@@ -22,7 +36,7 @@ export class RecordStorage {
    * @param name
    */
   get(name: string) {
-    if (this.records[name]) return this.records[name];
+    if (this._records[name]) return this._records[name];
     throw new SchemaError(`Record '${name}' not exists`);
   }
 
@@ -32,10 +46,16 @@ export class RecordStorage {
    * @returns
    */
   add(definition: RecordDefinition) {
+    if (this.verified) {
+      throw new SchemaError(
+        `Records storage already verify cannot add new record`
+      );
+    }
+
     // As pointer to record store
     if (typeof definition === 'string') {
       // Record input is string, cannot add definition
-      if (this.records[definition]) return definition;
+      if (this._records[definition]) return definition;
       else throw new SchemaError(`Record '${definition}' is not exists`);
     }
 
@@ -43,9 +63,8 @@ export class RecordStorage {
     else if (typeof definition === 'function') {
       const def = getRecordData(definition);
       if (!def) throw new SchemaError(`'${definition}' is not a record`);
-      verifyNamedRecord(def);
 
-      const record = this.recordClasses[def.name];
+      const record = this._recordClasses[def.name];
       if (record) {
         // Check if two defs is one
         if (record !== definition) {
@@ -55,29 +74,32 @@ export class RecordStorage {
         }
         return def.name;
       } else {
-        if (!verifyName(def.name)) {
-          throw new SchemaError(`Record name '${def.name}' is invalid`);
-        }
-
-        this.recordClasses[def.name] = definition;
-        this.records[def.name] = def;
+        this._recordClasses[def.name] = definition;
+        this._records[def.name] = def;
         return def.name;
       }
     }
 
     // As schema definition
     else {
-      verifyNamedRecord(definition);
-      if (this.records[definition.name]) {
+      if (this._records[definition.name]) {
         throw new SchemaError(
           `Record '${definition.name}' definition is duplicated`
         );
-      } else if (!verifyName(definition.name)) {
-        throw new SchemaError(`Record name '${definition.name}' is invalid`);
       }
 
-      this.records[definition.name] = definition as NamedRecordType;
+      this._records[definition.name] = definition as NamedRecordType;
       return definition.name;
     }
+  }
+
+  verify() {
+    if (this.verified) return;
+
+    for (const record of Object.values(this._records)) {
+      verifyRecord(this, record.name, { type: 'record', ...record }, true);
+    }
+
+    this.verified = true;
   }
 }

@@ -36,8 +36,8 @@ export class Service {
       throw new ConfigError(`Method name '${config.name}' is not valid`);
     const name = `${this.name}.${config.name}`;
 
-    const request = this.serializer.record(config.request);
-    const response = this.serializer.record(config.response);
+    const request = this.server.storage.add(config.request);
+    const response = this.server.storage.add(config.response);
 
     const middlewares = config.middlewares
       ? Array.isArray(config.middlewares)

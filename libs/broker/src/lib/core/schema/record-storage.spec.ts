@@ -29,22 +29,33 @@ describe('RecordStorage', () => {
 
   it('should verify record', () => {
     storage = new RecordStorage([]);
+    storage.add({ name: 'awesom e', fields: {} });
+    expect(() => storage.verify()).toThrow();
 
-    expect(() => storage.add({ name: 'awesom e', fields: {} })).toThrow();
-    expect(() =>
-      storage.add({
-        name: 'Foo',
-        fields: { 'demo ': { order: 1, type: 'string' } },
-      })
-    ).toThrow();
-    expect(() =>
-      storage.add({
-        name: 'Bar',
-        fields: {
-          name: { order: 1, type: 'string' },
-          age: { order: 1, type: 'int' },
-        },
-      })
-    ).toThrow();
+    storage = new RecordStorage([]);
+    storage.add({
+      name: 'Foo',
+      fields: { 'demo ': { order: 1, type: 'string' } },
+    });
+    expect(() => storage.verify()).toThrow();
+
+    storage = new RecordStorage([]);
+    storage.add({
+      name: 'Bar',
+      fields: {
+        name: { order: 1, type: 'string' },
+        age: { order: 1, type: 'int' },
+      },
+    });
+    expect(() => storage.verify()).toThrow();
+
+    storage = new RecordStorage([]);
+    storage.add({
+      name: 'Baz',
+      fields: {
+        todo: { order: 1, type: 'pointer', pointer: 'Todo' },
+      },
+    });
+    expect(() => storage.verify()).toThrow();
   });
 });

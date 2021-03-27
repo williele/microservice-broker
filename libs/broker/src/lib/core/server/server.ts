@@ -14,7 +14,7 @@ import {
   ConfigError,
   HandlerUnimplementError,
 } from '../error';
-import { NamedRecordType } from '../schema';
+import { NamedRecordType, RecordStorage } from '../schema';
 
 interface MethodInfo {
   request: string;
@@ -32,17 +32,18 @@ export class Server {
   private _started = false;
 
   // Default context
-  private _context: Context;
-  private _response: Response;
+  private readonly _context: Context;
+  private readonly _response: Response;
 
-  private _records: Record<string, NamedRecordType> = {};
+  public readonly storage: RecordStorage;
 
   constructor(
     public readonly broker: Broker,
     serializerConfig: SerializerConfig,
-    private readonly records?: NamedRecordType[]
+    records: NamedRecordType[] = []
   ) {
-    this.serializer = createSerializer(serializerConfig);
+    this.storage = new RecordStorage(records);
+    this.serializer = createSerializer(serializerConfig, this.storage);
 
     // Default context
     this._context = Object.create({
@@ -70,6 +71,10 @@ export class Server {
     if (this._started === true) {
       throw new ConfigError(`Broker server try to start twice`);
     }
+
+    // Verify schema
+    this.storage.verify();
+    this.getSchema();
 
     // This can implement global middlwares
     const handle = compose([this.handle]);
@@ -136,12 +141,6 @@ export class Server {
   getSchema(): ServiceSchema {
     if (this._schema) return this._schema;
 
-    const types: Record<string, string> = Object.entries(
-      this.serializer.getTypes()
-    ).reduce(
-      (a, [name, record]) => ({ ...a, [name]: JSON.stringify(record) }),
-      {}
-    );
     const methods: Record<string, MethodInfo> = Object.entries(
       this._methods
     ).reduce(
@@ -159,7 +158,7 @@ export class Server {
     this._schema = {
       transporter: this.broker.transporter.transporterName,
       serializer: this.serializer.serializerName,
-      types: types,
+      records: this.storage.records,
       methods: methods,
     };
     return this._schema;

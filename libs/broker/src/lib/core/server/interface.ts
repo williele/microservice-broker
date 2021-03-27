@@ -1,4 +1,5 @@
-import { RecordDefinition } from '../interface';
+import { RecordDefinition } from '../schema';
+import { NamedRecordType } from '../schema';
 import { Context } from './context';
 
 export interface MethodInfo {
@@ -10,7 +11,7 @@ export interface MethodInfo {
 export interface ServiceSchema {
   transporter: string;
   serializer: string;
-  types: Record<string, string>;
+  records: Record<string, NamedRecordType>;
   methods: Record<string, MethodInfo>;
 }
 
