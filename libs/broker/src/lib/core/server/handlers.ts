@@ -2,7 +2,7 @@ import { Tags } from 'opentracing';
 import { BadResponseError, BrokerError, InternalError } from '../error';
 import { spanLogError } from '../error/span';
 import { Context } from './context';
-import { HandlerMiddleware, HandleType } from './interface';
+import { Middleware, HandleType } from './interface';
 
 /**
  * Helper function for sending response
@@ -39,7 +39,7 @@ export function traceHandler(
   name: string,
   request?: string,
   response?: string
-): HandlerMiddleware {
+): Middleware {
   return async (ctx: Context, next) => {
     const span = ctx.startSpan(`handle ${type} ${name}`, {
       tags: {

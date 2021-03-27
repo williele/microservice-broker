@@ -22,14 +22,14 @@ export interface RequestHandler<I = unknown, O = unknown> {
   (ctx: Context<I, O>): Promise<void> | void;
 }
 
-export interface HandlerMiddlewareNext {
+export interface MiddlewareNext {
   (): Promise<void>;
 }
-export interface HandlerMiddleware {
-  (ctx: Context, next: HandlerMiddlewareNext): Promise<void> | void;
+export interface Middleware {
+  (ctx: Context, next: MiddlewareNext): Promise<void> | void;
 }
-export interface HandlerCompose {
-  (ctx: Context, next?: HandlerMiddlewareNext): Promise<void>;
+export interface MiddlewareCompose {
+  (ctx: Context, next?: MiddlewareNext): Promise<void>;
 }
 
 export interface AddHandlerConfig {
@@ -38,7 +38,7 @@ export interface AddHandlerConfig {
   description?: string;
   request?: string;
   response?: string;
-  middlewares?: HandlerMiddleware | HandlerMiddleware[];
+  middlewares?: Middleware | Middleware[];
   handler: RequestHandler;
   tracing?: boolean;
 }

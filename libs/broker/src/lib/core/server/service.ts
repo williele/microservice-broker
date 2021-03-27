@@ -1,4 +1,4 @@
-import { AddHandlerConfig, HandlerMiddleware } from './interface';
+import { AddHandlerConfig, Middleware } from './interface';
 import { verifyName } from '../utils/verify-name';
 import { compose } from './compose';
 import { Broker } from '../broker';
@@ -11,7 +11,7 @@ import { traceHandler } from './handlers';
  * A part of broker for handling request
  */
 export class BaseService {
-  private _middlewares: HandlerMiddleware[] = [];
+  private _middlewares: Middleware[] = [];
   protected readonly serializer: BaseSerializer;
   protected readonly broker: Broker;
 
@@ -31,13 +31,11 @@ export class BaseService {
     this.serializer = this.server.serializer;
   }
 
-  use(...middlewares: HandlerMiddleware[]) {
+  use(...middlewares: Middleware[]) {
     this._middlewares.push(...middlewares);
   }
 
-  protected normalizeMiddlewares(
-    middlewares: HandlerMiddleware | HandlerMiddleware[]
-  ) {
+  protected normalizeMiddlewares(middlewares: Middleware | Middleware[]) {
     if (!middlewares) return [];
     return middlewares
       ? Array.isArray(middlewares)
@@ -94,38 +92,4 @@ export class BaseService {
       handler: compose(handlers),
     });
   }
-
-  // method(config: AddMethodConfig) {
-  //   if (!verifyName(config.name))
-  //     throw new ConfigError(`Method name '${config.name}' is not valid`);
-  //   const name = `${this.name}.${config.name}`;
-
-  //   const request = this.server.storage.add(config.request);
-  //   const response = this.server.storage.add(config.response);
-
-  //   const middlewares = config.middlewares
-  //     ? Array.isArray(config.middlewares)
-  //       ? config.middlewares
-  //       : [config.middlewares]
-  //     : [];
-
-  //   // add default stack
-  //   const handlers = [
-  //     ...this._middlewares,
-  //     ...(config.tracing ?? false
-  //       ? [traceHandleMethod(name, request, response)]
-  //       : []),
-  //     handleMethod(request, response),
-  //     ...middlewares,
-  //     config.handler,
-  //   ];
-
-  //   this.server.addMethod({
-  //     name,
-  //     request,
-  //     response,
-  //     handler: compose(handlers),
-  //     description: config.description,
-  //   });
-  // }
 }

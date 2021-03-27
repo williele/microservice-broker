@@ -1,7 +1,7 @@
 import {
-  HandlerMiddleware,
-  HandlerCompose,
-  HandlerMiddlewareNext,
+  Middleware,
+  MiddlewareCompose,
+  MiddlewareNext,
 } from '@williele/broker';
 import { ConfigError } from '../error';
 import type { Context } from './context';
@@ -11,7 +11,7 @@ import type { Context } from './context';
  * @param stack
  * @returns
  */
-export function compose(stack: HandlerMiddleware[]): HandlerCompose {
+export function compose(stack: Middleware[]): MiddlewareCompose {
   if (!Array.isArray(stack))
     throw new ConfigError('Middleware stack much be an array!');
   for (const fn of stack) {
@@ -19,7 +19,7 @@ export function compose(stack: HandlerMiddleware[]): HandlerCompose {
       throw new ConfigError('Middleware must be composed of functions!');
   }
 
-  return function (ctx: Context, next: HandlerMiddlewareNext) {
+  return function (ctx: Context, next: MiddlewareNext) {
     let index = -1;
     return dispatch(0);
 

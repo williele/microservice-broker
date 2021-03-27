@@ -1,6 +1,6 @@
 import { Context } from './context';
 import { sendResponse } from './handlers';
-import { AddMethodConfig, HandlerMiddleware } from './interface';
+import { AddMethodConfig, Middleware } from './interface';
 import { Server } from './server';
 import { BaseService } from './service';
 
@@ -35,7 +35,7 @@ export class MethodService extends BaseService {
  * @param response
  * @returns
  */
-function handleMethod(request: string, response: string): HandlerMiddleware {
+function handleMethod(request: string, response: string): Middleware {
   return async (ctx: Context, next) => {
     ctx.body = ctx.serializer.decodeFor(
       'method_request',

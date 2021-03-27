@@ -1,7 +1,7 @@
 import { Broker } from '../broker';
 import {
-  HandlerCompose,
-  HandlerMiddleware,
+  MiddlewareCompose,
+  Middleware,
   MethodInfo,
   ServiceSchema,
 } from './interface';
@@ -25,7 +25,7 @@ interface HandlerInfo {
   request: string;
   response?: string;
   description?: string;
-  handler: HandlerCompose;
+  handler: MiddlewareCompose;
 }
 
 export class Server {
@@ -104,7 +104,7 @@ export class Server {
    * Handle middleware
    * @param ctx
    */
-  private handle: HandlerMiddleware = async (ctx: Context) => {
+  private handle: Middleware = async (ctx: Context) => {
     // Extract from header
     const method = ctx.header('method');
 
@@ -176,7 +176,7 @@ export class Server {
     type: string;
     request: string;
     response?: string;
-    handler: HandlerCompose;
+    handler: MiddlewareCompose;
     description?: string;
   }) {
     if (this._started === true) {
