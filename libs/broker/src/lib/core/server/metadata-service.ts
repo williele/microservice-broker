@@ -3,17 +3,21 @@ import { RequestHandler } from './interface';
 import { BaseService } from './service';
 import { sendResponse } from './handlers';
 
+export const METADATA_SERVICE = '_metadata';
+
+export const FETCH_SCHEMA_METHOD = `${METADATA_SERVICE}.schema`;
+
 /**
  * A metadata service serve all kind of information about this broker
  * Not using any special serializer, only JSON stringify and Buffer
  */
 export class MetadataService extends BaseService {
   constructor(server: Server) {
-    super(server, 'metadata');
+    super(server, METADATA_SERVICE);
 
     this.handle({
       type: 'method',
-      name: '_schema',
+      name: 'schema',
       handler: this.schema,
       description: 'Get service schema',
     });

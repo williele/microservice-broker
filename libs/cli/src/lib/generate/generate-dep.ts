@@ -1,5 +1,10 @@
-import type { MethodInfo, NamedRecordType } from '@williele/broker';
+import type {
+  MethodInfo,
+  NamedRecordType,
+  ServiceSchema,
+} from '@williele/broker';
 import {
+  AssignmentNode,
   CallFunctionNode,
   ClassNode,
   ClassPropertyNode,
@@ -13,14 +18,10 @@ import {
 } from './generators';
 import { toType } from './to-type';
 
-const hideTypes = ['ServiceSchema', 'Null'];
-
-export function generateDependency(dependency: {
-  aliasName: string;
-  serviceName: string;
-  types: Record<string, NamedRecordType>;
-  methods: Record<string, MethodInfo>;
-}) {
+export function generateDependency(
+  aliasName: string,
+  serviceSchema: ServiceSchema
+) {
   const declareFile = new FileGenerator();
   const scriptFile = new FileGenerator();
 
@@ -38,7 +39,7 @@ export function generateDependency(dependency: {
   sImports.isJs = true;
   sImports.addImport('@williele/broker', 'ExtractClient');
 
-  Object.values(dependency.types).forEach((record) => {
+  Object.values(serviceSchema.records).forEach((record) => {
     const inter = generateType(record);
     if (!inter) return;
 
@@ -46,9 +47,9 @@ export function generateDependency(dependency: {
   });
 
   const [dClass, sClass] = generateClient(
-    dependency.aliasName,
-    dependency.serviceName,
-    dependency.methods
+    aliasName,
+    serviceSchema.serviceName,
+    serviceSchema.methods
   );
 
   declareFile.addNodes(dClass);
@@ -62,8 +63,6 @@ function generateType(record: NamedRecordType): InterfaceNode {
   node.export = true;
 
   // Hidden type
-  if (hideTypes.includes(record.name)) return;
-
   if (record.deprecated) node.comments.push('@deprecated');
   if (record.description) node.comments.push(record.description);
 
@@ -107,40 +106,6 @@ function generateClient(
   sNode.export = true;
   sNode.declare = true;
 
-  // Comment
-  dNode.comments.push(`Extract client for ${aliasName} service`);
-  sNode.comments.push(`Extract client for ${aliasName} service`);
-
-  function methodGeneric(name: string) {
-    if (name === 'Null') return new TypeNode('null');
-    else return new TypeNode(name);
-  }
-
-  // Properties
-  Object.entries(methods).forEach(([name, config]) => {
-    const propName = clientPropName(name);
-    if (propName.startsWith('metadata')) return;
-
-    const type = new TypeNode('ExtractClientMethod');
-    type.generics.push(
-      methodGeneric(config.request),
-      methodGeneric(config.response)
-    );
-
-    const dProp = new VariableNode(propName, type);
-    dProp.comments.push('@method');
-    if (config.description) dProp.comments.push(config.description);
-
-    const sProp = new ClassPropertyNode(
-      new VariableNode(propName),
-      new CallFunctionNode('this.createMethod', new ValueNode(name, true))
-    );
-    sProp.isJs = true;
-
-    dNode.addProperty(new ClassPropertyNode(dProp));
-    sNode.addProperty(sProp);
-  });
-
   // Constructor
   dNode.constructorFn = new FunctionNode('constructor');
   dNode.constructorFn.arguments.push(
@@ -157,6 +122,38 @@ function generateClient(
       new ValueNode(serviceName, true)
     )
   );
+
+  // Comment
+  dNode.comments.push(`Extract client for ${aliasName} service`);
+  sNode.comments.push(`Extract client for ${aliasName} service`);
+
+  function methodGeneric(name: string) {
+    if (name === 'Null') return new TypeNode('null');
+    else return new TypeNode(name);
+  }
+
+  // Properties
+  Object.entries(methods).forEach(([name, config]) => {
+    const propName = clientPropName(name);
+    const type = new TypeNode('ExtractClientMethod');
+    type.generics.push(
+      methodGeneric(config.request),
+      methodGeneric(config.response)
+    );
+
+    const dMethod = new VariableNode(`readonly ${propName}`, type);
+    dMethod.comments.push('@method');
+    if (config.description) dMethod.comments.push(config.description);
+
+    const sMethod = new AssignmentNode(
+      new VariableNode(`this.${propName}`),
+      new CallFunctionNode('this.createMethod', new ValueNode(name, true))
+    );
+
+    dNode.addProperty(new ClassPropertyNode(dMethod));
+    // Add in constructor
+    sNode.constructorFn.blocks.push(sMethod);
+  });
 
   return [dNode, sNode];
 }

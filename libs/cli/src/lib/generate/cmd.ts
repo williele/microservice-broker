@@ -32,7 +32,7 @@ async function generate(config: Configure, services?: string[]) {
         .map(([name]) => name);
 
   serviceNames
-    .map((name) => generateService(config, name))
+    .map((name) => generateService(config, name, !!serviceNames))
     .reduce((a, b) => [...a, ...b], [])
     .forEach(({ text, fileName }) => {
       const path = config.resolve(fileName);
@@ -44,7 +44,11 @@ async function generate(config: Configure, services?: string[]) {
     });
 }
 
-export function generateService(config: Configure, name: string) {
+export function generateService(
+  config: Configure,
+  name: string,
+  strict = true
+) {
   const service = config.services[name];
   if (!service) {
     throw new TypeError(`Service '${name}' not found in config file`);
@@ -60,7 +64,9 @@ export function generateService(config: Configure, name: string) {
   );
   const schema: LocalServiceSchema = JSON.parse(serviceSchemaText);
   if (!service.generate) {
-    throw new TypeError(`Service '${name}' don't have generate options`);
+    if (strict)
+      throw new TypeError(`Service '${name}' don't have generate options`);
+    else return [];
   }
 
   // Get dependencies
@@ -77,12 +83,7 @@ export function generateService(config: Configure, name: string) {
   // Generate dependencies
   for (const dependency of dependecies) {
     const [name, service] = dependency;
-    const { declareFile, scriptFile } = generateDependency({
-      aliasName: name,
-      serviceName: service.serviceName,
-      types: service.types,
-      methods: service.methods,
-    });
+    const { declareFile, scriptFile } = generateDependency(name, service);
 
     const clientName = clientClassName(name);
 

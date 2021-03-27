@@ -12,7 +12,7 @@ import { compose } from './compose';
 import { sendError } from './handlers';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
-import { MetadataService } from './metadata-service';
+import { MetadataService, METADATA_SERVICE } from './metadata-service';
 import {
   BadRequestError,
   ConfigError,
@@ -111,7 +111,8 @@ export class Server {
     // If request is method
     if (method) {
       const methodInfo = this._handlers['method'][method];
-      if (!methodInfo) throw new HandlerUnimplementError('method not exists');
+      if (!methodInfo)
+        throw new HandlerUnimplementError(`method '${method}' not exists`);
       await methodInfo.handler(ctx);
     }
     // Unknown request
@@ -149,7 +150,7 @@ export class Server {
       this._handlers['method']
     ).reduce((a, [name, info]) => {
       // Hide metadata method
-      if (name.startsWith('metadata')) return a;
+      if (name.startsWith(METADATA_SERVICE)) return a;
       return {
         ...a,
         [name]: {
@@ -161,6 +162,7 @@ export class Server {
     }, {});
 
     this._schema = {
+      serviceName: this.broker.serviceName,
       transporter: this.broker.transporter.transporterName,
       serializer: this.serializer.serializerName,
       records: this.storage.records,

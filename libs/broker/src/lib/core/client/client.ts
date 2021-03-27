@@ -7,6 +7,7 @@ import { BaseTransporter } from '../transporter';
 import { BadRequestError, BrokerError, BrokerErrorCode } from '../error';
 import { spanLogError } from '../error/span';
 import { RecordStorage } from '../schema';
+import { FETCH_SCHEMA_METHOD } from '../server/metadata-service';
 
 export class Client {
   private schema: ServiceSchema;
@@ -77,12 +78,12 @@ export class Client {
     });
   }
 
-  fetchSchema(parentSpan?: Span) {
-    if (this.schema) return this.schema;
+  fetchSchema(parentSpan?: Span): Promise<ServiceSchema> {
+    if (this.schema) return Promise.resolve(this.schema);
 
     const span = this.tracer.startSpan('fetch schema', { childOf: parentSpan });
 
-    return this.requestMethod('metadata._schema', Buffer.from([]), span)
+    return this.requestMethod(FETCH_SCHEMA_METHOD, Buffer.from([]), span)
       .then((body) => {
         this.schema = JSON.parse(body.toString());
         this.setSchema(this.schema);

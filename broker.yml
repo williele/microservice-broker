@@ -22,3 +22,12 @@ services:
     serviceName: 'nest'
     source: 'default'
     schema: 'apps/nest-service/broker-schema.json'
+
+  demo:
+    serviceName: 'bar'
+    schema: 'apps/demo/broker-schema.json'
+    generate:
+      output: 'node_modules/.broker/demo'
+    dependencies:
+      nest_service:
+        alias: 'nest'

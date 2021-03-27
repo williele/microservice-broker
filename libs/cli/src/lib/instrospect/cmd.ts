@@ -79,16 +79,7 @@ async function createServiceSchema(config: Configure, service: LocalService) {
       throw err;
     });
 
-    schema.dependencies[name] = {
-      serviceName: target.serviceName,
-      serializer: targetSchema.serializer,
-      transporter: targetSchema.transporter,
-      types: Object.entries(targetSchema.types).reduce(
-        (a, [name, config]) => ({ ...a, [name]: JSON.parse(config) }),
-        {}
-      ),
-      methods: targetSchema.methods,
-    };
+    schema.dependencies[name] = targetSchema;
   }
 
   // Clean up broker

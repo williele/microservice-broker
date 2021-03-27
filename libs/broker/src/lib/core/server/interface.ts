@@ -11,6 +11,7 @@ export interface MethodInfo {
 export type HandleType = 'method';
 
 export interface ServiceSchema {
+  serviceName: string;
   transporter: string;
   serializer: string;
   records: Record<string, NamedRecordType>;

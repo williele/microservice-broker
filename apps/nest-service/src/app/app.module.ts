@@ -3,6 +3,7 @@ import { BrokerModule } from '@williele/broker-nest';
 import { Tracer } from 'opentracing';
 
 import { AppService } from './app.service';
+import { Demo } from './model';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { SharedModule } from './shared/shared.module';
             servers: ['http://localhost:4444'],
           },
         },
+        server: { records: [Demo] },
         tracer,
       }),
       inject: [Tracer],
