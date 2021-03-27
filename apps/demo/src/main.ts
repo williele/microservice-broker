@@ -1,8 +1,8 @@
-import { Broker, ExtractClient } from '@williele/broker';
-import { initTracer } from 'jaeger-client';
+import { Broker } from '@williele/broker';
+import { NestClient } from '.broker/demo';
 
 const broker = new Broker({
-  serviceName: 'bar',
+  serviceName: 'baz',
   serializer: { name: 'arvo' },
   transporter: {
     name: 'nats',
@@ -10,41 +10,15 @@ const broker = new Broker({
       servers: ['http://localhost:4444'],
     },
   },
-  tracer: initTracer(
-    {
-      serviceName: 'test-client',
-      sampler: { type: 'const', param: 1 },
-      reporter: { logSpans: false },
-    },
-    {}
-  ),
   disableServer: true,
 });
 
-class TestClient extends ExtractClient {
-  constructor(broker: Broker) {
-    super(broker, 'nest');
-  }
-
-  readonly getData = this.createMethod('main.getData');
-
-  // readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
-  //   'demo.hello'
-  // );
-
-  // readonly demo = this.createMethod<{ name: string }, { age: 'number' }>(
-  //   'demo.demo'
-  // );
-}
-
 async function main() {
-  const client = new TestClient(broker);
+  const client = new NestClient(broker);
   await broker.start();
 
-  // const hello = await client.hello({ name: 'demo' });
-  // console.log(hello.age);
-  const demo = await client.getData(null);
-  console.log(demo);
+  const result = await client.main_hello({ name: 'Willie Le', length: 10 });
+  console.log(result);
 }
 
 main().catch((error) => console.error(error));

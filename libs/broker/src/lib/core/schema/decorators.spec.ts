@@ -1,5 +1,6 @@
 import { Record, Field, getRecordData, ArrayField } from './decorators';
 import { ArvoSerializer } from '../serializer/arvo-serializer';
+import { RecordStorage } from './record-storage';
 
 describe('Record decorators', () => {
   it('should construct schema correctly', () => {
@@ -23,9 +24,8 @@ describe('Record decorators', () => {
     }
     console.log(JSON.stringify(getRecordData(Test), null, 2));
 
-    const serializer = new ArvoSerializer({ name: 'arvo' });
-
-    serializer.record(getRecordData(Test));
+    const storage = new RecordStorage([Test]);
+    const serializer = new ArvoSerializer({ name: 'arvo' }, storage);
 
     const value: Test = {
       name: 'hello',

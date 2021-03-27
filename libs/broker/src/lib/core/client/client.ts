@@ -1,12 +1,13 @@
 import { Tracer, Tags, FORMAT_HTTP_HEADERS, Span } from 'opentracing';
 import { Broker } from '../broker';
 import { ServiceSchema } from '../server/interface';
-import { BaseSerializer, NullRecord, SerializerConfig } from '../serializer';
+import { BaseSerializer, SerializerConfig } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
-import { ServiceSchemaRecord } from '../serializer';
 import { BaseTransporter } from '../transporter';
 import { BadRequestError, BrokerError, BrokerErrorCode } from '../error';
 import { spanLogError } from '../error/span';
+import { RecordStorage } from '../schema';
+import { FETCH_SCHEMA_METHOD } from '../server/metadata-service';
 
 export class Client {
   private schema: ServiceSchema;
@@ -15,13 +16,15 @@ export class Client {
   private serializer: BaseSerializer;
   private transporter: BaseTransporter;
   private tracer: Tracer;
+  private storage: RecordStorage;
 
   constructor(
     private readonly broker: Broker,
     private readonly serviceName: string,
     serializerConfig: SerializerConfig
   ) {
-    this.serializer = createSerializer(serializerConfig);
+    this.storage = new RecordStorage([]);
+    this.serializer = createSerializer(serializerConfig, this.storage);
 
     this.transporter = this.broker.transporter;
     this.tracer = this.broker.tracer;
@@ -70,27 +73,19 @@ export class Client {
     this.schema = schema;
 
     // Parsing serializer
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Object.values(this.schema.types).forEach((type: any) => {
-      this.serializer.record(JSON.parse(type));
+    Object.values(this.schema.records).forEach((type) => {
+      this.storage.add(type);
     });
   }
 
-  fetchSchema(parentSpan?: Span) {
+  fetchSchema(parentSpan?: Span): Promise<ServiceSchema> {
+    if (this.schema) return Promise.resolve(this.schema);
+
     const span = this.tracer.startSpan('fetch schema', { childOf: parentSpan });
 
-    return this.requestMethod(
-      'metadata._schema',
-      this.serializer.encode(NullRecord.name, null),
-      span
-    )
+    return this.requestMethod(FETCH_SCHEMA_METHOD, Buffer.from([]), span)
       .then((body) => {
-        this.schema = this.serializer.decodeFor(
-          'schema',
-          ServiceSchemaRecord.name,
-          body,
-          this.tracer.startSpan('decode schema', { childOf: span })
-        );
+        this.schema = JSON.parse(body.toString());
         this.setSchema(this.schema);
 
         return this.schema;

@@ -2,7 +2,7 @@ import { Tags } from 'opentracing';
 import { BadResponseError, BrokerError, InternalError } from '../error';
 import { spanLogError } from '../error/span';
 import { Context } from './context';
-import { HandlerMiddleware } from './interface';
+import { HandlerMiddleware, HandleType } from './interface';
 
 /**
  * Helper function for sending response
@@ -29,25 +29,26 @@ export function sendError(ctx: Context, err: Error) {
 
   ctx.setHeader('error', error.code);
   ctx.setHeader('error.message', error.message);
-  ctx.response(ctx.serializer.encode('Null', {}));
+  ctx.response(Buffer.from([]));
 
   return sendResponse(ctx);
 }
 
-export function traceHandleMethod(
-  methodName: string,
-  request: string,
-  response: string
+export function traceHandler(
+  type: HandleType,
+  name: string,
+  request?: string,
+  response?: string
 ): HandlerMiddleware {
   return async (ctx: Context, next) => {
-    const span = ctx.startSpan(`handle method ${methodName}`, {
+    const span = ctx.startSpan(`handle ${type} ${name}`, {
       tags: {
         [Tags.SPAN_KIND]: Tags.SPAN_KIND_RPC_SERVER,
-        'method.name': methodName,
-        'method.request': request,
-        'method.response': response,
+        [`${type}.name`]: name,
       },
     });
+    if (request) span.setTag(`${type}.request`, request);
+    if (response) span.setTag(`${type}.response`, response);
     ctx.span = span.context();
 
     try {
@@ -58,41 +59,5 @@ export function traceHandleMethod(
       span.finish();
       throw error;
     }
-  };
-}
-
-/**
- * Decode request body and encode response body
- * If reply exists in header, resend it
- * @param name
- * @param request
- * @param response
- * @returns
- */
-export function handleMethod(
-  request: string,
-  response: string
-): HandlerMiddleware {
-  return async (ctx: Context, next) => {
-    ctx.body = ctx.serializer.decodeFor(
-      'method_request',
-      request,
-      ctx.packet.body,
-      ctx.startSpan('decode request')
-    );
-
-    // Set default header
-    ctx.setHeader('method', ctx.header('method'));
-
-    await next();
-
-    ctx.res.body = ctx.serializer.encodeFor(
-      'method_response',
-      response,
-      ctx.res.body,
-      ctx.startSpan('encode response')
-    );
-
-    await sendResponse(ctx);
   };
 }

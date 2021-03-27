@@ -1,46 +1,53 @@
 import { Broker } from '../broker';
-import { HandlerCompose, HandlerMiddleware, ServiceSchema } from './interface';
-import { TransportPacket } from '../interface';
-import { Service } from './service';
+import {
+  HandlerCompose,
+  HandlerMiddleware,
+  MethodInfo,
+  ServiceSchema,
+} from './interface';
+import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { compose } from './compose';
 import { sendError } from './handlers';
-import { BaseSerializer, SerializerConfig } from '../serializer';
+import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
-import { MetadataService } from './metadata/metadata-service';
+import { MetadataService, METADATA_SERVICE } from './metadata-service';
 import {
   BadRequestError,
   ConfigError,
   HandlerUnimplementError,
 } from '../error';
+import { RecordStorage } from '../schema';
+import { MethodService } from './method-service';
 
-interface MethodInfo {
+interface HandlerInfo {
   request: string;
-  response: string;
-  handler: HandlerCompose;
+  response?: string;
   description?: string;
+  handler: HandlerCompose;
 }
 
 export class Server {
   public readonly serializer: BaseSerializer;
-  private _methods: Record<string, MethodInfo> = {};
+  private _handlers: Record<string, Record<string, HandlerInfo>> = {};
 
   // Cached
   private _schema: ServiceSchema;
   private _started = false;
 
   // Default context
-  private _context: Context;
-  private _response: Response;
+  private readonly _context: Context;
+  private readonly _response: Response;
+
+  public readonly storage: RecordStorage;
 
   constructor(
     public readonly broker: Broker,
-    serializerConfig: SerializerConfig
+    public readonly config: BrokerConfig
   ) {
-    this.serializer = createSerializer(serializerConfig);
-    // Default type
-    this.serializer.record({ name: 'Null', type: 'record', fields: {} });
+    this.storage = new RecordStorage(config.server?.records || []);
+    this.serializer = createSerializer(config.serializer, this.storage);
 
     // Default context
     this._context = Object.create({
@@ -68,6 +75,10 @@ export class Server {
     if (this._started === true) {
       throw new ConfigError(`Broker server try to start twice`);
     }
+
+    // Verify schema
+    this.storage.verify();
+    this.getSchema();
 
     // This can implement global middlwares
     const handle = compose([this.handle]);
@@ -99,8 +110,9 @@ export class Server {
 
     // If request is method
     if (method) {
-      const methodInfo = this._methods[method];
-      if (!methodInfo) throw new HandlerUnimplementError('method not exists');
+      const methodInfo = this._handlers['method'][method];
+      if (!methodInfo)
+        throw new HandlerUnimplementError(`method '${method}' not exists`);
       await methodInfo.handler(ctx);
     }
     // Unknown request
@@ -116,6 +128,7 @@ export class Server {
     const ctx: Context = Object.create(this._context);
     ctx.packet = packet;
     ctx.res = Object.create(this._response);
+    ctx.res.header = Object.create(this._response.header);
 
     // Initialize request span
     ctx.span = this.broker.tracer.extract(FORMAT_HTTP_HEADERS, packet.header);
@@ -127,66 +140,65 @@ export class Server {
    * Create a subservice
    */
   createService(name: string) {
-    return new Service(this, name);
+    return new MethodService(this, name);
   }
 
   getSchema(): ServiceSchema {
     if (this._schema) return this._schema;
 
-    const types: Record<string, string> = Object.entries(
-      this.serializer.getTypes()
-    ).reduce(
-      (a, [name, record]) => ({ ...a, [name]: JSON.stringify(record) }),
-      {}
-    );
     const methods: Record<string, MethodInfo> = Object.entries(
-      this._methods
-    ).reduce(
-      (a, [name, info]) => ({
+      this._handlers['method']
+    ).reduce((a, [name, info]) => {
+      // Hide metadata method
+      if (name.startsWith(METADATA_SERVICE)) return a;
+      return {
         ...a,
         [name]: {
           request: info.request,
           response: info.response,
           description: info.description || null,
         } as MethodInfo,
-      }),
-      {}
-    );
+      };
+    }, {});
 
     this._schema = {
+      serviceName: this.broker.serviceName,
       transporter: this.broker.transporter.transporterName,
       serializer: this.serializer.serializerName,
-      types: types,
+      records: this.storage.records,
       methods: methods,
     };
     return this._schema;
   }
 
-  /**
-   * Add method
-   * @param config
-   */
-  addMethod(config: {
+  addHandler(config: {
     name: string;
+    type: string;
     request: string;
-    response: string;
+    response?: string;
     handler: HandlerCompose;
     description?: string;
   }) {
     if (this._started === true) {
       throw new ConfigError(
-        `Broker server cannot add new method after started`
+        `Broker server cannot add new handler after started`
       );
     }
 
-    const { name } = config;
-    if (!name) throw new ConfigError(`Method '${name}' already exists`);
+    const { name, type } = config;
+    if (this._handlers[type]?.[name]) {
+      throw new ConfigError(`Handler ${config.type} '${name}' already exists`);
+    }
 
-    this._methods[name] = {
+    if (!this._handlers[type]) {
+      this._handlers[type] = {};
+    }
+
+    this._handlers[type][name] = {
       request: config.request,
       response: config.response,
-      handler: config.handler,
       description: config.description,
+      handler: config.handler,
     };
   }
 }

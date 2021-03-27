@@ -1,13 +1,7 @@
 import { ArrayField, Field, Record } from '@williele/broker';
 
 @Record()
-export class DemoInput {
-  @Field(1, 'string')
-  name: string;
-}
-
-@Record()
-export class DemoOutput {
+export class Demo {
   @Field(1, 'string')
   message: string;
 }
@@ -23,6 +17,6 @@ export class DemoListInput {
 
 @Record()
 export class DemoListOutput {
-  @ArrayField(1, DemoOutput)
-  list: DemoOutput[];
+  @ArrayField(1, Demo)
+  list: Demo[];
 }

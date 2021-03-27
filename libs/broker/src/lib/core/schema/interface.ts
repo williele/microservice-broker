@@ -18,8 +18,10 @@ export type ComplexType =
   | PointerType;
 
 export type SchemaType = PrimitiveType | PrimitiveType['type'] | ComplexType;
-export type NamedSchemaType = SchemaType & { name: string };
-export type NamedRecordType = RecordType & { name: string };
+
+export type NamedRecordType = Omit<RecordType & { name: string }, 'type'>;
+
+export type RecordDefinition = NamedRecordType | string | { new (...args) };
 
 export interface BaseType {
   name?: string;

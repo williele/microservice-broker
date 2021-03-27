@@ -1,0 +1,55 @@
+{
+  "dependencies": {
+    "nest": {
+      "serviceName": "nest",
+      "transporter": "nats",
+      "serializer": "arvo",
+      "records": {
+        "Demo": {
+          "name": "Demo",
+          "fields": {
+            "message": {
+              "order": 1,
+              "type": "string"
+            }
+          }
+        },
+        "DemoListInput": {
+          "name": "DemoListInput",
+          "fields": {
+            "name": {
+              "order": 1,
+              "type": "string",
+              "min": 2
+            },
+            "length": {
+              "order": 2,
+              "type": "int",
+              "min": 5
+            }
+          }
+        },
+        "DemoListOutput": {
+          "name": "DemoListOutput",
+          "fields": {
+            "list": {
+              "order": 1,
+              "type": "array",
+              "items": {
+                "type": "pointer",
+                "pointer": "Demo"
+              }
+            }
+          }
+        }
+      },
+      "methods": {
+        "main.hello": {
+          "request": "DemoListInput",
+          "response": "DemoListOutput",
+          "description": null
+        }
+      }
+    }
+  }
+}

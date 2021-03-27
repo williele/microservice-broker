@@ -1,4 +1,5 @@
-import { UsableRecord } from '../interface';
+import { RecordDefinition } from '../schema';
+import { NamedRecordType } from '../schema';
 import { Context } from './context';
 
 export interface MethodInfo {
@@ -7,13 +8,14 @@ export interface MethodInfo {
   description?: string;
 }
 
+export type HandleType = 'method';
+
 export interface ServiceSchema {
+  serviceName: string;
   transporter: string;
   serializer: string;
-  types: Record<string, string>;
+  records: Record<string, NamedRecordType>;
   methods: Record<string, MethodInfo>;
-  // actions: {request:string}
-  // events: {type:string}
 }
 
 export interface RequestHandler<I = unknown, O = unknown> {
@@ -30,12 +32,19 @@ export interface HandlerCompose {
   (ctx: Context, next?: HandlerMiddlewareNext): Promise<void>;
 }
 
-export interface AddMethodConfig {
+export interface AddHandlerConfig {
   name: string;
-  request: UsableRecord;
-  response: UsableRecord;
-  middlewares?: HandlerMiddleware | HandlerMiddleware[];
+  type: HandleType;
   description?: string;
+  request?: string;
+  response?: string;
+  middlewares?: HandlerMiddleware | HandlerMiddleware[];
   handler: RequestHandler;
   tracing?: boolean;
+}
+
+export interface AddMethodConfig
+  extends Omit<AddHandlerConfig, 'type' | 'request' | 'response'> {
+  request: RecordDefinition;
+  response: RecordDefinition;
 }

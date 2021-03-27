@@ -1,15 +1,33 @@
-serializer:
-  name: 'arvo'
-transporter:
-  name: 'nats'
-  options:
-    servers:
-      - http://localhost:4444
+sources:
+  default:
+    serializer: 'arvo'
+    transporter:
+      name: 'nats'
+      options:
+        servers:
+          - 'http://localhost:4444'
 
 services:
-  nest-gateway:
+  nest_gateway:
+    serviceName: 'gateway'
+    schema: 'apps/nest-gateway/broker-schema.json'
+    source: 'default'
     generate:
-      dir: apps/nest-gateway/src/app/shared
-      forNest: true
-      dependencies:
-        nest:
+      output: 'node_modules/.broker/nest_gateway'
+    dependencies:
+      nest_service:
+        alias: 'nest'
+
+  nest_service:
+    serviceName: 'nest'
+    source: 'default'
+    schema: 'apps/nest-service/broker-schema.json'
+
+  demo:
+    serviceName: 'bar'
+    schema: 'apps/demo/broker-schema.json'
+    generate:
+      output: 'node_modules/.broker/demo'
+    dependencies:
+      nest_service:
+        alias: 'nest'

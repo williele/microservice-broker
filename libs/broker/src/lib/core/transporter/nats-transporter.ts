@@ -26,10 +26,7 @@ export class NatsTransporter extends BaseTransporter {
 
   async connect() {
     if (this.connection) return;
-
-    this.connection = await nats.connect({
-      ...this.clientOps,
-    });
+    this.connection = await nats.connect(this.clientOps);
 
     (async () => {
       this.onConnect();
@@ -69,6 +66,7 @@ export class NatsTransporter extends BaseTransporter {
   }
 
   private toHeaders(header: MsgHdrs): Record<string, string> {
+    if (!header) return {};
     return Array.from(header).reduce(
       (obj, [key, value]) =>
         Object.assign(obj, { [key.toLowerCase()]: value.join('') }),
@@ -114,10 +112,11 @@ export class NatsTransporter extends BaseTransporter {
 
     // Encode into messagepack before send out
     try {
-      const h = this.headers(packet.header);
-      const nc = await this.connection.request(subject, packet.body, {
+      const header = this.headers(packet.header);
+      const payload = new Uint8Array(packet.body);
+      const nc = await this.connection.request(subject, payload, {
         timeout: 5_000,
-        headers: h,
+        headers: header,
       });
 
       return {
