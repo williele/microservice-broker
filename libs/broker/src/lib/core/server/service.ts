@@ -5,6 +5,7 @@ import { Broker } from '../broker';
 import { BaseSerializer } from '../serializer';
 import { Server } from './server';
 import { ConfigError, SchemaError } from '../error';
+import { traceHandler } from './handlers';
 
 /**
  * A part of broker for handling request
@@ -13,6 +14,10 @@ export class BaseService {
   private _middlewares: HandlerMiddleware[] = [];
   protected readonly serializer: BaseSerializer;
   protected readonly broker: Broker;
+
+  private get enableTracing() {
+    return this.server.config.server?.tracing ?? false;
+  }
 
   constructor(
     protected readonly server: Server,
@@ -61,8 +66,22 @@ export class BaseService {
       );
     }
 
+    // Tracing middleware
+    const tracing =
+      config.tracing ?? this.enableTracing
+        ? [
+            traceHandler(
+              config.type,
+              config.name,
+              config.request,
+              config.response
+            ),
+          ]
+        : [];
+
     const handlers = [
       ...this._middlewares,
+      ...tracing,
       ...this.normalizeMiddlewares(config.middlewares),
       config.handler,
     ];

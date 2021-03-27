@@ -66,6 +66,7 @@ export class NatsTransporter extends BaseTransporter {
   }
 
   private toHeaders(header: MsgHdrs): Record<string, string> {
+    if (!header) return {};
     return Array.from(header).reduce(
       (obj, [key, value]) =>
         Object.assign(obj, { [key.toLowerCase()]: value.join('') }),

@@ -5,13 +5,12 @@ import {
   MethodInfo,
   ServiceSchema,
 } from './interface';
-import { TransportPacket } from '../interface';
-import { BaseService } from './service';
+import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { compose } from './compose';
 import { sendError } from './handlers';
-import { BaseSerializer, SerializerConfig } from '../serializer';
+import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { MetadataService } from './metadata-service';
 import {
@@ -19,7 +18,8 @@ import {
   ConfigError,
   HandlerUnimplementError,
 } from '../error';
-import { NamedRecordType, RecordStorage } from '../schema';
+import { RecordStorage } from '../schema';
+import { MethodService } from './method-service';
 
 interface HandlerInfo {
   request: string;
@@ -44,11 +44,10 @@ export class Server {
 
   constructor(
     public readonly broker: Broker,
-    serializerConfig: SerializerConfig,
-    records: NamedRecordType[] = []
+    public readonly config: BrokerConfig
   ) {
-    this.storage = new RecordStorage(records);
-    this.serializer = createSerializer(serializerConfig, this.storage);
+    this.storage = new RecordStorage(config.server?.records || []);
+    this.serializer = createSerializer(config.serializer, this.storage);
 
     // Default context
     this._context = Object.create({
@@ -140,7 +139,7 @@ export class Server {
    * Create a subservice
    */
   createService(name: string) {
-    return new BaseService(this, name);
+    return new MethodService(this, name);
   }
 
   getSchema(): ServiceSchema {
@@ -148,17 +147,18 @@ export class Server {
 
     const methods: Record<string, MethodInfo> = Object.entries(
       this._handlers['method']
-    ).reduce(
-      (a, [name, info]) => ({
+    ).reduce((a, [name, info]) => {
+      // Hide metadata method
+      if (name.startsWith('metadata')) return a;
+      return {
         ...a,
         [name]: {
           request: info.request,
           response: info.response,
           description: info.description || null,
         } as MethodInfo,
-      }),
-      {}
-    );
+      };
+    }, {});
 
     this._schema = {
       transporter: this.broker.transporter.transporterName,

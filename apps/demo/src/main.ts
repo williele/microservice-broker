@@ -1,5 +1,5 @@
-import { Broker, ExtractClient } from '@williele/broker';
-import { initTracer } from 'jaeger-client';
+import { Broker, Context } from '@williele/broker';
+// import { initTracer } from 'jaeger-client';
 
 const broker = new Broker({
   serviceName: 'bar',
@@ -10,41 +10,77 @@ const broker = new Broker({
       servers: ['http://localhost:4444'],
     },
   },
-  tracer: initTracer(
-    {
-      serviceName: 'test-client',
-      sampler: { type: 'const', param: 1 },
-      reporter: { logSpans: false },
+  server: {
+    records: [
+      { name: 'Message', fields: { message: { order: 1, type: 'string' } } },
+    ],
+  },
+  // tracer: initTracer(
+  //   {
+  //     serviceName: 'test-client',
+  //     sampler: { type: 'const', param: 1 },
+  //     reporter: { logSpans: false },
+  //   },
+  //   {}
+  // ),
+  // disableServer: true,
+});
+
+const client = new Broker({
+  serviceName: 'baz',
+  serializer: { name: 'arvo' },
+  transporter: {
+    name: 'nats',
+    options: {
+      servers: ['http://localhost:4444'],
     },
-    {}
-  ),
+  },
   disableServer: true,
 });
 
-class TestClient extends ExtractClient {
-  constructor(broker: Broker) {
-    super(broker, 'nest');
-  }
+// class TestClient extends ExtractClient {
+//   constructor(broker: Broker) {
+//     super(broker, 'nest');
+//   }
 
-  readonly getData = this.createMethod('main.getData');
+//   readonly getData = this.createMethod('main.getData');
 
-  // readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
-  //   'demo.hello'
-  // );
+//   // readonly hello = this.createMethod<{ name: string }, { age: 'number' }>(
+//   //   'demo.hello'
+//   // );
 
-  // readonly demo = this.createMethod<{ name: string }, { age: 'number' }>(
-  //   'demo.demo'
-  // );
-}
+//   // readonly demo = this.createMethod<{ name: string }, { age: 'number' }>(
+//   //   'demo.demo'
+//   // );
+// }
+
+const service = broker.createService('main');
+
+service.method({
+  name: 'demo',
+  request: {
+    name: 'DemoInput',
+    fields: { name: { order: 1, type: 'string' } },
+  },
+  response: {
+    name: 'DemoOutput',
+    fields: { message: { order: 1, type: 'pointer', pointer: 'Message' } },
+  },
+  handler(ctx: Context<{ name: string }>) {
+    // throw ValidateError.fields({ name: 'weird' });
+    ctx.response({ message: { message: `hello ${ctx.body.name}` } });
+  },
+});
 
 async function main() {
-  const client = new TestClient(broker);
   await broker.start();
+  await client.start();
 
-  // const hello = await client.hello({ name: 'demo' });
-  // console.log(hello.age);
-  const demo = await client.getData(null);
-  console.log(demo);
+  const demoClient = broker.createClient('bar');
+  const result = await demoClient.call('main.demo', { name: 'Williele' });
+  console.log(result);
+
+  console.log(await demoClient.fetchSchema());
 }
 
 main().catch((error) => console.error(error));

@@ -29,7 +29,7 @@ export class Broker {
 
     // Add server
     if (this.config.disableServer !== true)
-      this.server = new Server(this, config.serializer);
+      this.server = new Server(this, config);
   }
 
   /**
