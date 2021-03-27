@@ -3,6 +3,7 @@ import { BrokerModule } from '@williele/broker-nest';
 import { Tracer } from 'opentracing';
 
 import { AppController } from './app.controller';
+import { RequestInterceptor } from './shared/request.interceptor';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
@@ -10,7 +11,7 @@ import { SharedModule } from './shared/shared.module';
     SharedModule,
     BrokerModule.forRootAsync({
       import: [SharedModule],
-      factory: (tracer: Tracer) => ({
+      factory: (tracer: Tracer, request: RequestInterceptor) => ({
         serviceName: 'gateway',
         serializer: { name: 'arvo' },
         transporter: {
@@ -19,9 +20,12 @@ import { SharedModule } from './shared/shared.module';
             servers: ['http://localhost:4444'],
           },
         },
+        client: {
+          interceptors: [request.interceptor],
+        },
         tracer,
       }),
-      inject: [Tracer],
+      inject: [Tracer, RequestInterceptor],
     }),
   ],
   controllers: [AppController],

@@ -7,7 +7,7 @@ import { BadRequestError } from '../error';
 import { RecordStorage } from '../schema';
 import { FETCH_SCHEMA_METHOD } from '../server/metadata-service';
 import { BrokerConfig } from '../interface';
-import { Interceptor, Packet } from './interface';
+import { Interceptor, InterceptorCompose, Packet } from './interface';
 import { composeInterceptor } from './compose';
 import { request, serializeRequest } from './request';
 
@@ -19,6 +19,11 @@ export class Client {
   private transporter: BaseTransporter;
   private storage: RecordStorage;
 
+  private interceptors: Interceptor[] = [];
+
+  // cache
+  private methodComposes: Record<string, InterceptorCompose> = {};
+
   constructor(
     private readonly broker: Broker,
     config: BrokerConfig,
@@ -26,6 +31,8 @@ export class Client {
   ) {
     this.storage = new RecordStorage([]);
     this.serializer = createSerializer(config.serializer, this.storage);
+
+    this.interceptors.push(...(config.client?.interceptors || []));
 
     this.transporter = this.broker.transporter;
   }
@@ -62,14 +69,16 @@ export class Client {
   }
 
   /**
-   * Call a method of current service
+   * Composing a method handler and cache it for later use
+   * @param method
+   * @param header
+   * @returns
    */
-  async call<O = unknown>(
+  private async composeMethod(
     method: string,
-    body: unknown,
-    header: Packet['header'] = {},
-    ...interceptor: Interceptor[]
-  ): Promise<Packet<O>> {
+    header: Packet['header']
+  ): Promise<InterceptorCompose> {
+    if (this.methodComposes[method]) return this.methodComposes[method];
     if (!this.schema) await this.fetchSchema(header);
 
     const info = this.schema.methods[method];
@@ -79,18 +88,27 @@ export class Client {
       );
 
     const compose = composeInterceptor([
-      ...interceptor,
+      ...this.interceptors,
       serializeRequest(this.serializer, info.request, info.response),
       request(this.rpcSubject, this.transporter),
     ]);
+    this.methodComposes[method] = compose;
+    return compose;
+  }
 
+  /**
+   * Call a method of current service
+   */
+  async call<O = unknown>(
+    method: string,
+    body: unknown,
+    header: Packet['header'] = {}
+  ): Promise<Packet<O>> {
+    const compose = await this.composeMethod(method, header);
     // Inject header
     this.injectMethod(method, header);
 
     const response = await compose({ body, header });
-    return {
-      body: response.body as O,
-      header: response.header,
-    };
+    return response as Packet<O>;
   }
 }

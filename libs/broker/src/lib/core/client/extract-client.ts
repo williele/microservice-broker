@@ -25,7 +25,7 @@ export class ExtractClient {
   ): ExtractClientMethod<I, O> {
     return (input: I, header: Packet['header'] = {}) =>
       this.client
-        .call<O>(name, { body: input, header: { ...defaultHeader, ...header } })
+        .call<O>(name, input, { ...defaultHeader, ...header })
         .then((r) => r.body);
   }
 }

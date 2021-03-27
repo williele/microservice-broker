@@ -1,7 +1,7 @@
-import { Context, HandlerMiddlewareNext } from '@williele/broker';
+import { Context, MiddlewareNext } from '@williele/broker';
 
 export interface Middleware {
-  handle(context: Context, next?: HandlerMiddlewareNext): Promise<void>;
+  handle(context: Context, next?: MiddlewareNext): Promise<void>;
 }
 
 export interface MiddlewareConstructor {

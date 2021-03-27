@@ -11,20 +11,9 @@ export class AppController {
   constructor(private readonly nestClient: NestService) {}
 
   @Get()
-  getData() {
-    return this.nestClient.main_getData(null);
-  }
-
-  @Get('hello')
-  hello(@Query('name') name: string) {
-    return this.nestClient.main_hello({ name: name || 'Anomous' });
-  }
-
-  @Get('list-hello')
-  listHello(@Query('name') name: string, @Query('length') length: string) {
-    // return this.nestClient.hello({ name: name || 'Anomous' });
+  hello(@Query('name') name: string, @Query('length') length: string) {
     return this.nestClient
-      .main_moreHello({
+      .main_hello({
         name: name || 'Someone',
         length: toNumber(length, 10),
       })

@@ -15,7 +15,7 @@ export class BrokerServer extends Server implements CustomTransportStrategy {
     await this.broker.start();
   }
 
-  close() {
-    // this.broker
+  async close() {
+    await this.broker.destroy();
   }
 }

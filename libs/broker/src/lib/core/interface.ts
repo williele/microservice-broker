@@ -2,7 +2,7 @@ import { TransporterConfig } from './transporter';
 import { SerializerConfig } from './serializer';
 import type { Tracer } from 'opentracing';
 import { RecordDefinition } from './schema';
-import { Packet } from './client/interface';
+import { Interceptor, Packet } from './client/interface';
 export interface BrokerConfig {
   serviceName: string;
   serializer: SerializerConfig;
@@ -17,6 +17,9 @@ export interface BrokerConfig {
      * If true, all method is enable tracing by default
      */
     tracing?: boolean;
+  };
+  client?: {
+    interceptors?: Interceptor[];
   };
   /**
    * If true, broker won't create server

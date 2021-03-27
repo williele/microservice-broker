@@ -1,6 +1,7 @@
 import { Module, Provider } from '@nestjs/common';
 import { Tracer } from 'opentracing';
 import { NestService } from './nest.service';
+import { RequestInterceptor } from './request.interceptor';
 
 const tracerProvider: Provider = {
   provide: Tracer,
@@ -16,7 +17,7 @@ const tracerProvider: Provider = {
 };
 
 @Module({
-  providers: [tracerProvider, NestService],
-  exports: [Tracer, NestService],
+  providers: [tracerProvider, RequestInterceptor, NestService],
+  exports: [Tracer, RequestInterceptor, NestService],
 })
 export class SharedModule {}
