@@ -1,8 +1,7 @@
-import { Span } from 'opentracing';
 import { Broker } from '../broker';
 import { ExtractClientMethod } from '../interface';
-import { ServiceSchema } from '../server';
 import { Client } from './client';
+import { Packet } from './interface';
 
 /**
  * Create a client model for another service
@@ -16,14 +15,17 @@ export class ExtractClient {
    * @param serviceName
    * @param schema Default schema, if given client won't fetch schema from target service
    */
-  constructor(broker: Broker, serviceName: string, schema?: ServiceSchema) {
+  constructor(broker: Broker, serviceName: string) {
     this.client = broker.createClient(serviceName);
-    if (schema) this.client.setSchema(schema);
   }
 
   protected createMethod<I = unknown, O = unknown>(
-    name: string
+    name: string,
+    defaultHeader: Packet['header'] = {}
   ): ExtractClientMethod<I, O> {
-    return (input: I, span?: Span) => this.client.call<O>(name, input, span);
+    return (input: I, header: Packet['header'] = {}) =>
+      this.client
+        .call<O>(name, { body: input, header: { ...defaultHeader, ...header } })
+        .then((r) => r.body);
   }
 }

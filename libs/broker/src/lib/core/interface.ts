@@ -1,7 +1,8 @@
 import { TransporterConfig } from './transporter';
 import { SerializerConfig } from './serializer';
-import type { Tracer, Span } from 'opentracing';
+import type { Tracer } from 'opentracing';
 import { RecordDefinition } from './schema';
+import { Packet } from './client/interface';
 export interface BrokerConfig {
   serviceName: string;
   serializer: SerializerConfig;
@@ -29,5 +30,5 @@ export interface TransportPacket {
 }
 
 export interface ExtractClientMethod<I = unknown, O = unknown> {
-  (input: I, span?: Span): Promise<O>;
+  (input: I, header?: Packet['header']): Promise<O>;
 }

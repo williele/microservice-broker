@@ -1,5 +1,5 @@
 import { Broker } from '@williele/broker';
-import { NestClient } from '.broker/demo';
+// import { NestClient } from '.broker/demo';
 
 const broker = new Broker({
   serviceName: 'baz',
@@ -14,11 +14,18 @@ const broker = new Broker({
 });
 
 async function main() {
-  const client = new NestClient(broker);
+  // const client = new NestClient(broker);
+  const client = broker.createClient('nest');
   await broker.start();
 
-  const result = await client.main_hello({ name: 'Willie Le', length: 10 });
-  console.log(result);
+  const result = await client.call('main.hello', {
+    name: 'Willie Le',
+    length: 5,
+  });
+  console.log(result.body);
+
+  // const result = await client.main_hello({ name: 'Willie Le', length: 10 });
+  // console.log(result);
 }
 
 main().catch((error) => console.error(error));

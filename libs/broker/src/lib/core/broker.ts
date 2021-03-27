@@ -61,7 +61,7 @@ export class Broker {
    */
   createClient(service: string) {
     if (this.clients[service]) return this.clients[service];
-    this.clients[service] = new Client(this, service, this.config.serializer);
+    this.clients[service] = new Client(this, this.config, service);
     return this.clients[service];
   }
 
