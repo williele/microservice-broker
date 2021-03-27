@@ -1,14 +1,19 @@
 import { Broker } from '../broker';
-import { HandlerCompose, HandlerMiddleware, ServiceSchema } from './interface';
+import {
+  HandlerCompose,
+  HandlerMiddleware,
+  MethodInfo,
+  ServiceSchema,
+} from './interface';
 import { TransportPacket } from '../interface';
-import { Service } from './service';
+import { BaseService } from './service';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { compose } from './compose';
 import { sendError } from './handlers';
 import { BaseSerializer, SerializerConfig } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
-import { MetadataService } from './metadata/metadata-service';
+import { MetadataService } from './metadata-service';
 import {
   BadRequestError,
   ConfigError,
@@ -16,16 +21,16 @@ import {
 } from '../error';
 import { NamedRecordType, RecordStorage } from '../schema';
 
-interface MethodInfo {
+interface HandlerInfo {
   request: string;
-  response: string;
-  handler: HandlerCompose;
+  response?: string;
   description?: string;
+  handler: HandlerCompose;
 }
 
 export class Server {
   public readonly serializer: BaseSerializer;
-  private _methods: Record<string, MethodInfo> = {};
+  private _handlers: Record<string, Record<string, HandlerInfo>> = {};
 
   // Cached
   private _schema: ServiceSchema;
@@ -106,7 +111,7 @@ export class Server {
 
     // If request is method
     if (method) {
-      const methodInfo = this._methods[method];
+      const methodInfo = this._handlers['method'][method];
       if (!methodInfo) throw new HandlerUnimplementError('method not exists');
       await methodInfo.handler(ctx);
     }
@@ -135,14 +140,14 @@ export class Server {
    * Create a subservice
    */
   createService(name: string) {
-    return new Service(this, name);
+    return new BaseService(this, name);
   }
 
   getSchema(): ServiceSchema {
     if (this._schema) return this._schema;
 
     const methods: Record<string, MethodInfo> = Object.entries(
-      this._methods
+      this._handlers['method']
     ).reduce(
       (a, [name, info]) => ({
         ...a,
@@ -164,31 +169,34 @@ export class Server {
     return this._schema;
   }
 
-  /**
-   * Add method
-   * @param config
-   */
-  addMethod(config: {
+  addHandler(config: {
     name: string;
+    type: string;
     request: string;
-    response: string;
+    response?: string;
     handler: HandlerCompose;
     description?: string;
   }) {
     if (this._started === true) {
       throw new ConfigError(
-        `Broker server cannot add new method after started`
+        `Broker server cannot add new handler after started`
       );
     }
 
-    const { name } = config;
-    if (!name) throw new ConfigError(`Method '${name}' already exists`);
+    const { name, type } = config;
+    if (this._handlers[type]?.[name]) {
+      throw new ConfigError(`Handler ${config.type} '${name}' already exists`);
+    }
 
-    this._methods[name] = {
+    if (!this._handlers[type]) {
+      this._handlers[type] = {};
+    }
+
+    this._handlers[type][name] = {
       request: config.request,
       response: config.response,
-      handler: config.handler,
       description: config.description,
+      handler: config.handler,
     };
   }
 }

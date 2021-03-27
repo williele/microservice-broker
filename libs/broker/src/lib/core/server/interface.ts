@@ -8,6 +8,8 @@ export interface MethodInfo {
   description?: string;
 }
 
+export type HandleType = 'method';
+
 export interface ServiceSchema {
   transporter: string;
   serializer: string;
@@ -31,13 +33,17 @@ export interface HandlerCompose {
 
 export interface AddHandlerConfig {
   name: string;
+  type: HandleType;
   description?: string;
-  request: RecordDefinition;
+  request?: string;
+  response?: string;
   middlewares?: HandlerMiddleware | HandlerMiddleware[];
   handler: RequestHandler;
   tracing?: boolean;
 }
 
-export interface AddMethodConfig extends AddHandlerConfig {
+export interface AddMethodConfig
+  extends Omit<AddHandlerConfig, 'type' | 'request' | 'response'> {
+  request: RecordDefinition;
   response: RecordDefinition;
 }

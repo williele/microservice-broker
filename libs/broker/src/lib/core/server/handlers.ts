@@ -60,39 +60,3 @@ export function traceHandleMethod(
     }
   };
 }
-
-/**
- * Decode request body and encode response body
- * If reply exists in header, resend it
- * @param name
- * @param request
- * @param response
- * @returns
- */
-export function handleMethod(
-  request: string,
-  response: string
-): HandlerMiddleware {
-  return async (ctx: Context, next) => {
-    ctx.body = ctx.serializer.decodeFor(
-      'method_request',
-      request,
-      ctx.packet.body,
-      ctx.startSpan('decode request')
-    );
-
-    // Set default header
-    ctx.setHeader('method', ctx.header('method'));
-
-    await next();
-
-    ctx.res.body = ctx.serializer.encodeFor(
-      'method_response',
-      response,
-      ctx.res.body,
-      ctx.startSpan('encode response')
-    );
-
-    await sendResponse(ctx);
-  };
-}
