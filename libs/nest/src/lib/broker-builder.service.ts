@@ -135,7 +135,7 @@ export class BrokerBuilderService implements OnModuleInit {
         host.addProvider({ provide: m, useValue: instance });
       } else instance = moduleRef.get(m);
 
-      middlewareHandlers.push(instance.handle);
+      middlewareHandlers.push(instance.handle.bind(instance));
     }
 
     return middlewareHandlers;
