@@ -127,6 +127,7 @@ export class Server {
   private createContext(packet: TransportPacket): Context {
     const ctx: Context = Object.create(this._context);
     ctx.packet = packet;
+    ctx.extra = {};
     ctx.res = Object.create(this._response);
     ctx.res.header = Object.create(this._response.header);
 
