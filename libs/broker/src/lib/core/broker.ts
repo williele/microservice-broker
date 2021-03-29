@@ -18,11 +18,9 @@ export class Broker {
   private started = false;
 
   constructor(private readonly config: BrokerConfig) {
+    // Setup service
     this.serviceName = config.serviceName;
-    this.transporter = createTransporter(
-      config.serviceName,
-      config.transporter
-    );
+    this.transporter = createTransporter(config);
 
     // Initializer tracer
     this.tracer = config.tracer || new Tracer();

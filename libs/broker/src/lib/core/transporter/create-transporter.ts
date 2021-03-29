@@ -1,16 +1,13 @@
 import { ConfigError } from '../error';
-import { TransporterConfig } from './interface';
+import { BrokerConfig } from '../interface';
 import { NatsTransporter } from './nats-transporter';
 
 /**
  * Create transporter from config
  */
-export function createTransporter(
-  serviceName: string,
-  config: TransporterConfig
-) {
-  if (config.name === 'nats') {
-    return new NatsTransporter(serviceName, config.options);
+export function createTransporter(config: BrokerConfig) {
+  if (config.transporter.name === 'nats') {
+    return new NatsTransporter(config, config.transporter.options);
   } else {
     throw new ConfigError('Unknown transporter name');
   }

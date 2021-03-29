@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { BrokerModule } from '@williele/broker-nest';
 import { Tracer } from 'opentracing';
 
@@ -19,7 +19,11 @@ import { SharedModule } from './shared/shared.module';
             servers: ['http://localhost:4444'],
           },
         },
-        server: { records: [Demo] },
+        logger: new Logger('Broker'),
+        server: {
+          records: [Demo],
+          schemaFile: './apps/nest-service/service-schema.json',
+        },
         tracer,
       }),
       inject: [Tracer],

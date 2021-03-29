@@ -8,6 +8,10 @@ export interface BrokerConfig {
   serializer: SerializerConfig;
   transporter: TransporterConfig;
   tracer?: Tracer;
+  logger?: {
+    log: (message: string) => void;
+    error: (message: string) => void;
+  };
   server?: {
     /**
      * Initial record models
@@ -17,6 +21,11 @@ export interface BrokerConfig {
      * If true, all method is enable tracing by default
      */
     tracing?: boolean;
+    /**
+     * Given a path, server will write a schema file
+     * Make introspect development services easier
+     */
+    schemaFile?: string;
   };
   client?: {
     interceptors?: Interceptor[];

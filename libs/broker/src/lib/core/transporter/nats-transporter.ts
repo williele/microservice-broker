@@ -1,5 +1,5 @@
 import { BaseTransporter } from './transporter';
-import { TransportPacket } from '../interface';
+import { BrokerConfig, TransportPacket } from '../interface';
 import type { ConnectionOptions, NatsConnection, MsgHdrs } from 'nats';
 import { packageLoader } from '../utils/package-loader';
 import { RequestTimeOutError, TransporterError } from '../error';
@@ -14,9 +14,10 @@ export class NatsTransporter extends BaseTransporter {
   transporterName = 'nats';
 
   private connection: NatsConnection;
+  private readonly serviceName = this.config.serviceName;
 
   constructor(
-    private readonly serviceName: string,
+    private readonly config: BrokerConfig,
     private clientOps: ConnectionOptions
   ) {
     super();
@@ -31,7 +32,7 @@ export class NatsTransporter extends BaseTransporter {
     (async () => {
       this.onConnect();
       for await (const s of this.connection.status()) {
-        console.info(`${s.type}: ${s.data}`);
+        this.config.logger?.log(`${s.type}: ${s.data}`);
         switch (s.type) {
           case nats.Events.Error:
             this.onError(s.data);

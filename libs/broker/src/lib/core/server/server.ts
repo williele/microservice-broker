@@ -8,6 +8,7 @@ import {
 import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
+import { promises } from 'fs';
 import { compose } from './compose';
 import { sendError } from './handlers';
 import { BaseSerializer } from '../serializer';
@@ -20,6 +21,7 @@ import {
 } from '../error';
 import { RecordStorage } from '../schema';
 import { MethodService } from './method-service';
+import { dirname, resolve } from 'path';
 
 interface HandlerInfo {
   request: string;
@@ -79,6 +81,10 @@ export class Server {
     // Verify schema
     this.storage.verify();
     this.getSchema();
+    // Write schema
+    if (this.config.server?.schemaFile) {
+      await this.schemaFile();
+    }
 
     // This can implement global middlwares
     const handle = compose([this.handle]);
@@ -98,6 +104,16 @@ export class Server {
     });
 
     this._started = true;
+  }
+
+  private async schemaFile() {
+    this.config.logger?.log('Write schema file');
+
+    const toPath = resolve(process.cwd(), this.config.server.schemaFile);
+    const toDir = dirname(toPath);
+    // Create dir
+    await promises.mkdir(toDir, { recursive: true });
+    await promises.writeFile(toPath, JSON.stringify(this._schema, null, 2));
   }
 
   /**
