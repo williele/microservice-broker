@@ -65,7 +65,7 @@ const defsSchema = {
         },
       },
       additionalProperties: false,
-      required: ['schema'],
+      required: [],
     },
   },
 };

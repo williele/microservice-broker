@@ -1,8 +1,10 @@
 import { Logger } from '@caporal/core';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { ServiceSchema } from '@williele/broker';
+// import { ServiceSchema } from 'libs/broker/src/lib/core';
 import { dirname, join } from 'path';
 import { Configure } from '../config';
-import { LocalServiceSchema } from '../interface';
+// import { LocalServiceSchema } from '../interface';
 import { clientClassName, generateDependency } from './generate-dep';
 import { FileGenerator, RawNode } from './generators';
 
@@ -32,7 +34,7 @@ async function generate(config: Configure, services?: string[]) {
         .map(([name]) => name);
 
   serviceNames
-    .map((name) => generateService(config, name, !!serviceNames))
+    .map((name) => generateService(config, name, !!services))
     .reduce((a, b) => [...a, ...b], [])
     .forEach(({ text, fileName }) => {
       const path = config.resolve(fileName);
@@ -56,13 +58,6 @@ export function generateService(
   if (service.type !== 'local') {
     throw new TypeError(`Service '${name}' is not local service`);
   }
-
-  // Load service schema file
-  const serviceSchemaText = readFileSync(
-    config.resolve(service.schema),
-    'utf8'
-  );
-  const schema: LocalServiceSchema = JSON.parse(serviceSchemaText);
   if (!service.generate) {
     if (strict)
       throw new TypeError(`Service '${name}' don't have generate options`);
@@ -70,7 +65,7 @@ export function generateService(
   }
 
   // Get dependencies
-  const dependecies = Object.entries(schema.dependencies || {});
+  const dependecies = Object.entries(service.dependencies || {});
   if (!dependecies.length) return;
 
   const files: { file: FileGenerator; fileName: string }[] = [];
@@ -82,8 +77,24 @@ export function generateService(
 
   // Generate dependencies
   for (const dependency of dependecies) {
-    const [name, service] = dependency;
-    const { declareFile, scriptFile } = generateDependency(name, service);
+    const [name, serviceName] = dependency;
+
+    const dependencyService = config.services[serviceName];
+    if (!dependencyService) {
+      throw new TypeError(`Unknown dependencies '${serviceName}'`);
+    }
+    if (dependencyService.type === 'external') {
+      throw new TypeError(`External dependencies is not support yet.`);
+    }
+    if (!dependencyService.schema) {
+      throw new TypeError(`Dependencies '${serviceName}' schema not found`);
+    }
+
+    // Get dependencies schema
+    const schema: ServiceSchema = JSON.parse(
+      readFileSync(config.resolve(dependencyService.schema), 'utf8')
+    );
+    const { declareFile, scriptFile } = generateDependency(name, schema);
 
     const clientName = clientClassName(name);
 

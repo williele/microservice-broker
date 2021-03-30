@@ -9,7 +9,7 @@
     "wibroker": "./src/lib/cli.js"
   },
   "peerDependencies": {
-    "@williele/broker": "next"
+    "@williele/broker": "latest"
   },
   "dependencies": {
     "@caporal/core": "^2.0.2",

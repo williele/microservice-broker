@@ -10,8 +10,6 @@ sources:
 services:
   nest_gateway:
     serviceName: 'gateway'
-    schema: 'apps/nest-gateway/broker-schema.json'
-    source: 'default'
     generate:
       output: 'node_modules/.broker/nest_gateway'
     dependencies:
@@ -20,12 +18,10 @@ services:
 
   nest_service:
     serviceName: 'nest'
-    source: 'default'
-    schema: 'apps/nest-service/broker-schema.json'
+    schema: 'apps/nest-service/service-schema.json'
 
   demo:
     serviceName: 'bar'
-    schema: 'apps/demo/broker-schema.json'
     generate:
       output: 'node_modules/.broker/demo'
     dependencies:
