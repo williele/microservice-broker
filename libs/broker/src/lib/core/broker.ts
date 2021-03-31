@@ -1,15 +1,18 @@
 import { Tracer } from 'opentracing';
-import { BrokerConfig, TransportPacket } from './interface';
+import { BrokerConfig, ID } from './interface';
 import { BaseTransporter } from './transporter';
-import { Client } from './client';
+import { Client, CommandMessage } from './client';
 import { createTransporter } from './transporter/create-transporter';
 import { Server } from './server/server';
 import { ConfigError } from './error';
+import { OutboxProcessor } from './outbox/procesor';
 
 export class Broker {
   readonly serviceName: string;
   readonly transporter: BaseTransporter;
   readonly tracer: Tracer;
+
+  readonly outboxProcessor: OutboxProcessor;
 
   private readonly server: Server;
 
@@ -26,8 +29,14 @@ export class Broker {
     this.tracer = config.tracer || new Tracer();
 
     // Add server
-    if (this.config.disableServer !== true)
+    if (this.config.disableServer !== true) {
       this.server = new Server(this, config);
+    }
+
+    // Add outbox
+    if (this.config.outbox) {
+      this.outboxProcessor = new OutboxProcessor(this, config);
+    }
   }
 
   /**
@@ -39,7 +48,8 @@ export class Broker {
     if (this.started) return;
 
     await this.transporter.connect();
-    if (this.config.disableServer !== true) await this.server.start();
+    if (this.server) await this.server.start();
+    if (this.outboxProcessor) await this.outboxProcessor.start();
 
     // Contruct schema
     this.started = true;
@@ -78,12 +88,20 @@ export class Broker {
   }
 
   /**
-   * Send a raw packet request
-   * @param subject
-   * @param packet
+   * Send a command message
+   * @param message command message
    * @returns
    */
-  requestRaw(subject: string, packet: TransportPacket) {
-    return this.transporter.sendRequest(subject, packet);
+  command(message: CommandMessage) {
+    const client = this.createClient(message.service);
+    return client.command(message);
+  }
+
+  /**
+   * Emit to make queue for sending command
+   * @param message
+   */
+  async emitOutbox(message: ID | ID[]) {
+    if (this.outboxProcessor) return this.outboxProcessor.add(message);
   }
 }

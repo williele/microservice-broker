@@ -1,5 +1,3 @@
-import { TransportPacket } from '../interface';
-
 /**
  * Request and response packet
  */
@@ -13,9 +11,10 @@ export interface Packet<B = unknown> {
  * packet body is already encoded
  */
 export interface CommandMessage {
-  subject: string;
+  service: string;
   command: string;
-  packet: TransportPacket;
+  body: Buffer;
+  header: Packet['header'];
 }
 
 export interface InterceptorNext {

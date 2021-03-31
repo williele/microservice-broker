@@ -1,4 +1,39 @@
-import { Broker, Context, DuplicateError } from '@williele/broker';
+import {
+  Broker,
+  CommandMessage,
+  Context,
+  DuplicateError,
+  Outbox,
+  OutboxProcessor,
+} from '@williele/broker';
+import * as cuid from 'cuid';
+
+class MyOutbox extends Outbox {
+  private message: Record<string, CommandMessage> = {};
+
+  add(message: CommandMessage) {
+    const id = cuid();
+    this.message[id] = message;
+    return id;
+  }
+
+  async get(id: string) {
+    return this.message[id];
+  }
+
+  async remove(id: string) {
+    delete this.message[id];
+  }
+
+  async setError(id: string, message: string) {
+    //
+  }
+
+  async list() {
+    return Object.keys(this.message);
+  }
+}
+const outbox = new MyOutbox();
 
 const serviceBroker = new Broker({
   serviceName: 'bar',
@@ -35,16 +70,23 @@ const clientBroker = new Broker({
     },
   },
   disableServer: true,
+  outbox: { redis: { port: 6380 }, outbox },
 });
 
 async function main() {
   const client = clientBroker.createClient('bar');
-  await Promise.all([serviceBroker.start(), clientBroker.start()]);
+  await serviceBroker.start();
+  await clientBroker.start();
 
   const value: { name: string } = { name: 'williele' };
   const message = await client.commandMessage('main.init', value);
+  const id = outbox.add(message);
 
-  await client.command(message);
+  // clientBroker.emitOutbox(id);
+
+  console.log('emit outbox');
+
+  // await client.command(message);
 
   // await clientBroker.requestRaw(message.subject, message.packet);
 

@@ -132,9 +132,10 @@ export class Client {
     );
 
     return {
-      subject: this.rpcSubject,
+      service: this.peerService,
       command,
-      packet: { body: buffer, header },
+      body: buffer,
+      header,
     };
   }
 
@@ -177,14 +178,18 @@ export class Client {
    * @param header
    */
   async command(message: CommandMessage): Promise<void> {
-    const { command, packet } = message;
+    const { service, command, body, header } = message;
+    if (this.peerService !== service)
+      throw new BadRequestError(
+        `Client '${this.peerService}' cannot send command to '${service}'`
+      );
 
-    const compose = await this.composeCommand(command, packet.header);
+    const compose = await this.composeCommand(command, header);
     // Inject header
-    this.injectCommand(command, packet.header);
+    this.injectCommand(command, header);
 
     try {
-      await compose(packet);
+      await compose({ body, header });
     } catch (err) {
       if (err instanceof DuplicateError) {
         return;

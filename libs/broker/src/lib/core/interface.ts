@@ -3,6 +3,11 @@ import { SerializerConfig } from './serializer';
 import type { Tracer } from 'opentracing';
 import { RecordDefinition } from './schema';
 import { CommandMessage, Interceptor, Packet } from './client/interface';
+import { Outbox } from './outbox';
+import type { QueueOptions } from 'bull';
+
+export type ID = string | number;
+
 export interface BrokerConfig {
   serviceName: string;
   serializer: SerializerConfig;
@@ -29,6 +34,13 @@ export interface BrokerConfig {
   };
   client?: {
     interceptors?: Interceptor[];
+  };
+  /**
+   * Outbox of command message and event message
+   */
+  outbox?: {
+    redis: QueueOptions['redis'];
+    outbox: Outbox;
   };
   /**
    * If true, broker won't create server

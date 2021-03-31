@@ -8,6 +8,12 @@ services:
       - 4444:4444
       - 8888:8888
 
+  redis:
+    image: redis:6.2
+    command: --port 6380
+    ports:
+      - 6380:6380
+
   # jaeger:
   #   image: jaegertracing/all-in-one:1.7
   #   ports:
