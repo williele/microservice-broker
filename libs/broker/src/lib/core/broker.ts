@@ -1,5 +1,5 @@
 import { Tracer } from 'opentracing';
-import { BrokerConfig } from './interface';
+import { BrokerConfig, TransportPacket } from './interface';
 import { BaseTransporter } from './transporter';
 import { Client } from './client';
 import { createTransporter } from './transporter/create-transporter';
@@ -75,5 +75,15 @@ export class Broker {
       );
 
     return this.server.createService(name);
+  }
+
+  /**
+   * Send a raw packet request
+   * @param subject
+   * @param packet
+   * @returns
+   */
+  requestRaw(subject: string, packet: TransportPacket) {
+    return this.transporter.sendRequest(subject, packet);
   }
 }

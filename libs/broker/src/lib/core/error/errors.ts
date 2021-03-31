@@ -18,6 +18,7 @@ export enum BrokerErrorCode {
   NOT_FOUND = 'NotFoundError',
   UNAUTHORIZATION = 'AuthorizationError',
   FORBIDDEN = 'ForbiddenError',
+  CONFLICT = 'Conflict',
 }
 
 export class BrokerError extends Error {
@@ -58,6 +59,8 @@ export class BrokerError extends Error {
         return new UnauthorizationError(message);
       case BrokerErrorCode.FORBIDDEN:
         return new ForbiddenError(message);
+      case BrokerErrorCode.CONFLICT:
+        return new ConfigError(message);
 
       default:
         return new InternalError('Unknow error');
@@ -158,5 +161,11 @@ export class UnauthorizationError extends BrokerError {
 export class ForbiddenError extends BrokerError {
   constructor(message: string) {
     super(BrokerErrorCode.FORBIDDEN, message);
+  }
+}
+
+export class ConflictError extends BrokerError {
+  constructor(message = 'Conflict') {
+    super(BrokerErrorCode.CONFLICT, message);
   }
 }

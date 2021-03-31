@@ -4,6 +4,7 @@ import {
   Middleware,
   MethodInfo,
   ServiceSchema,
+  CommandInfo,
 } from './interface';
 import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
@@ -123,6 +124,7 @@ export class Server {
   private handle: Middleware = async (ctx: Context) => {
     // Extract from header
     const method = ctx.header('method');
+    const command = ctx.header('command');
 
     // If request is method
     if (method) {
@@ -130,6 +132,11 @@ export class Server {
       if (!methodInfo)
         throw new HandlerUnimplementError(`method '${method}' not exists`);
       await methodInfo.handler(ctx);
+    } else if (command) {
+      const commandInfo = this._handlers['command'][command];
+      if (!commandInfo)
+        throw new HandlerUnimplementError(`command '${command}' not exists`);
+      await commandInfo.handler(ctx);
     }
     // Unknown request
     else throw new BadRequestError('unknown handler');
@@ -162,7 +169,7 @@ export class Server {
 
   getSchema(): ServiceSchema {
     if (this._schema) return this._schema;
-
+    // Construct methods records
     const methods: Record<string, MethodInfo> = Object.entries(
       this._handlers['method']
     ).reduce((a, [name, info]) => {
@@ -178,12 +185,26 @@ export class Server {
       };
     }, {});
 
+    // Construct command records
+    const commands: Record<string, CommandInfo> = Object.entries(
+      this._handlers['command']
+    ).reduce((a, [name, info]) => {
+      return {
+        ...a,
+        [name]: {
+          request: info.request,
+          description: info.description || null,
+        } as CommandInfo,
+      };
+    }, {});
+
     this._schema = {
       serviceName: this.broker.serviceName,
       transporter: this.broker.transporter.transporterName,
       serializer: this.serializer.serializerName,
       records: this.storage.records,
       methods: methods,
+      commands: commands,
     };
     return this._schema;
   }

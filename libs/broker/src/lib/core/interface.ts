@@ -44,3 +44,10 @@ export interface TransportPacket {
 export interface ExtractClientMethod<I = unknown, O = unknown> {
   (input: I, header?: Packet['header']): Promise<O>;
 }
+
+export interface ExtractCommandPacket<I = unknown> {
+  (input: I, header?: Packet['header']): Promise<{
+    subject: string;
+    packet: TransportPacket;
+  }>;
+}

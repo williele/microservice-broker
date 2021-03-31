@@ -42,6 +42,27 @@ export function serializeRequest(
 }
 
 /**
+ * Serializer before request
+ * @param serializer
+ * @param request
+ * @returns
+ */
+export function serializerCommand(
+  serializer: BaseSerializer,
+  request: string
+): Interceptor {
+  return async (packet, next) => {
+    packet['body'] = serializer.encodeFor(
+      'command_request',
+      request,
+      packet['body']
+    );
+
+    return next();
+  };
+}
+
+/**
  * Send a request use transporter
  * This is for request/response pattern
  * @param subject

@@ -8,7 +8,12 @@ export interface MethodInfo {
   description?: string;
 }
 
-export type HandleType = 'method';
+export interface CommandInfo {
+  request: string;
+  description?: string;
+}
+
+export type HandleType = 'method' | 'command';
 
 export interface ServiceSchema {
   serviceName: string;
@@ -16,6 +21,7 @@ export interface ServiceSchema {
   serializer: string;
   records: Record<string, NamedRecordType>;
   methods: Record<string, MethodInfo>;
+  commands: Record<string, CommandInfo>;
 }
 
 export interface RequestHandler<I = unknown, O = unknown> {
@@ -47,4 +53,9 @@ export interface AddMethodConfig
   extends Omit<AddHandlerConfig, 'type' | 'request' | 'response'> {
   request: RecordDefinition;
   response: RecordDefinition;
+}
+
+export interface AddCommandConfig
+  extends Omit<AddHandlerConfig, 'type' | 'request' | 'response'> {
+  request: RecordDefinition;
 }

@@ -1,5 +1,5 @@
 import { Broker } from '../broker';
-import { ExtractClientMethod } from '../interface';
+import { ExtractClientMethod, ExtractCommandPacket } from '../interface';
 import { Client } from './client';
 import { Packet } from './interface';
 
@@ -27,5 +27,16 @@ export class ExtractClient {
       this.client
         .call<O>(name, input, { ...defaultHeader, ...header })
         .then((r) => r.body);
+  }
+
+  protected createCommandPacket<I = unknown>(
+    command: string,
+    defaultHeader: Packet['header'] = {}
+  ): ExtractCommandPacket<I> {
+    return (input: I, header: Packet['header'] = {}) =>
+      this.client.commandPacket(command, input, {
+        ...defaultHeader,
+        ...header,
+      });
   }
 }
