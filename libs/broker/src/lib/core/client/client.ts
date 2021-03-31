@@ -3,13 +3,18 @@ import { ServiceSchema } from '../server/interface';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { BaseTransporter } from '../transporter';
-import { BadRequestError } from '../error';
+import { BadRequestError, DuplicateError } from '../error';
 import { RecordStorage } from '../schema';
 import { FETCH_SCHEMA_METHOD } from '../server/metadata-service';
-import { BrokerConfig, TransportPacket } from '../interface';
-import { Interceptor, InterceptorCompose, Packet } from './interface';
+import { BrokerConfig } from '../interface';
+import {
+  CommandMessage,
+  Interceptor,
+  InterceptorCompose,
+  Packet,
+} from './interface';
 import { composeInterceptor } from './compose';
-import { request, serializerCommand, serializeRequest } from './request';
+import { request, serializeRequest } from './request';
 
 export class Client {
   private schema: ServiceSchema;
@@ -105,12 +110,13 @@ export class Client {
   /**
    * Create a command packet
    * which can store into outbox for later requestRaw
+   * or send rightaway to command method
    */
-  async commandPacket(
+  async commandMessage(
     command: string,
     body,
     header: Packet['header'] = {}
-  ): Promise<{ subject: string; packet: TransportPacket }> {
+  ): Promise<CommandMessage> {
     if (!this.schema) await this.fetchSchema();
 
     const info = this.schema.commands[command];
@@ -119,7 +125,6 @@ export class Client {
         `Command '${command}' not exists in '${this.peerService}'`
       );
 
-    this.injectCommand(command, header);
     const buffer = this.serializer.encodeFor(
       'command_request',
       info.request,
@@ -128,26 +133,20 @@ export class Client {
 
     return {
       subject: this.rpcSubject,
+      command,
       packet: { body: buffer, header },
     };
   }
 
   private async composeCommand(
     command: string,
-    header: Packet['header']
+    header: Packet['header'] = {}
   ): Promise<InterceptorCompose> {
     if (this.commandComposes[command]) return this.commandComposes[command];
     if (!this.schema) await this.fetchSchema(header);
 
-    const info = this.schema.commands[command];
-    if (!info)
-      throw new BadRequestError(
-        `Command '${command}' not exists in '${this.peerService}'`
-      );
-
     const compose = composeInterceptor([
       ...this.interceptors,
-      serializerCommand(this.serializer, info.request),
       request(this.rpcSubject, this.transporter),
     ]);
     this.commandComposes[command] = compose;
@@ -166,28 +165,30 @@ export class Client {
     header: Packet['header'] = {}
   ): Promise<Packet<O>> {
     const compose = await this.composeMethod(method, header);
-    // Inject header
-    this.injectMethod(method, header);
 
     const response = await compose({ body, header });
     return response as Packet<O>;
   }
 
   /**
-   * Call a command of current service
+   * Send command message to peer service
    * @param command
    * @param body
    * @param header
    */
-  async command(
-    command: string,
-    body: unknown,
-    header: Packet['header'] = {}
-  ): Promise<void> {
-    const compose = await this.composeCommand(command, header);
-    // Inject header
-    this.injectCommand(command, header);
+  async command(message: CommandMessage): Promise<void> {
+    const { command, packet } = message;
 
-    await compose({ body, header });
+    const compose = await this.composeCommand(command, packet.header);
+    // Inject header
+    this.injectCommand(command, packet.header);
+
+    try {
+      await compose(packet);
+    } catch (err) {
+      if (err instanceof DuplicateError) {
+        return;
+      } else throw err;
+    }
   }
 }

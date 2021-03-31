@@ -19,6 +19,7 @@ export enum BrokerErrorCode {
   UNAUTHORIZATION = 'AuthorizationError',
   FORBIDDEN = 'ForbiddenError',
   CONFLICT = 'Conflict',
+  DUPLICATE = 'Duplicate',
 }
 
 export class BrokerError extends Error {
@@ -61,6 +62,8 @@ export class BrokerError extends Error {
         return new ForbiddenError(message);
       case BrokerErrorCode.CONFLICT:
         return new ConfigError(message);
+      case BrokerErrorCode.DUPLICATE:
+        return new DuplicateError(message);
 
       default:
         return new InternalError('Unknow error');
@@ -167,5 +170,16 @@ export class ForbiddenError extends BrokerError {
 export class ConflictError extends BrokerError {
   constructor(message = 'Conflict') {
     super(BrokerErrorCode.CONFLICT, message);
+  }
+}
+
+/**
+ * This error type use when if command request is duplicate
+ * And notice by service handler
+ * IMPORTANT! This error will ignore by client command method
+ */
+export class DuplicateError extends BrokerError {
+  constructor(message = 'Duplicate') {
+    super(BrokerErrorCode.DUPLICATE, message);
   }
 }

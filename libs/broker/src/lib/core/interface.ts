@@ -2,7 +2,7 @@ import { TransporterConfig } from './transporter';
 import { SerializerConfig } from './serializer';
 import type { Tracer } from 'opentracing';
 import { RecordDefinition } from './schema';
-import { Interceptor, Packet } from './client/interface';
+import { CommandMessage, Interceptor, Packet } from './client/interface';
 export interface BrokerConfig {
   serviceName: string;
   serializer: SerializerConfig;
@@ -45,9 +45,6 @@ export interface ExtractClientMethod<I = unknown, O = unknown> {
   (input: I, header?: Packet['header']): Promise<O>;
 }
 
-export interface ExtractCommandPacket<I = unknown> {
-  (input: I, header?: Packet['header']): Promise<{
-    subject: string;
-    packet: TransportPacket;
-  }>;
+export interface ExtractCommandMessage<I = unknown> {
+  (input: I, header?: Packet['header']): Promise<CommandMessage>;
 }

@@ -1,9 +1,21 @@
+import { TransportPacket } from '../interface';
+
 /**
  * Request and response packet
  */
 export interface Packet<B = unknown> {
   body: B;
   header: Record<string, string>;
+}
+
+/**
+ * Package of a command message
+ * packet body is already encoded
+ */
+export interface CommandMessage {
+  subject: string;
+  command: string;
+  packet: TransportPacket;
 }
 
 export interface InterceptorNext {
