@@ -1,7 +1,7 @@
-import { Server } from './server';
-import { RequestHandler } from './interface';
+import { Server } from '../server';
+import { RequestHandler } from '../interface';
 import { BaseService } from './service';
-import { sendResponse } from './handlers';
+import { sendResponse } from '../handlers';
 
 export const METADATA_SERVICE = '_metadata';
 

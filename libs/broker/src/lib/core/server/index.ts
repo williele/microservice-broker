@@ -1,3 +1,3 @@
 export * from './interface';
-export * from './service';
+export * from './services';
 export type { Context, Response } from './context';

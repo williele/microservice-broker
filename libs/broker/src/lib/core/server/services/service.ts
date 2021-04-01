@@ -1,11 +1,11 @@
-import { AddHandlerConfig, Middleware } from './interface';
-import { verifyName } from '../utils/verify-name';
-import { compose } from './compose';
-import { Broker } from '../broker';
-import { BaseSerializer } from '../serializer';
-import { Server } from './server';
-import { ConfigError, SchemaError } from '../error';
-import { traceHandler } from './handlers';
+import { AddHandlerConfig, Middleware } from '../interface';
+import { verifyName } from '../../utils/verify-name';
+import { compose } from '../compose';
+import { Broker } from '../../broker';
+import { BaseSerializer } from '../../serializer';
+import { Server } from '../server';
+import { ConfigError, SchemaError } from '../../error';
+import { traceHandler } from '../handlers';
 
 /**
  * A part of broker for handling request
@@ -21,10 +21,10 @@ export class BaseService {
 
   constructor(
     protected readonly server: Server,
-    protected readonly name: string
+    protected readonly namespace: string
   ) {
-    if (!verifyName(name)) {
-      throw new ConfigError(`Service name '${name}' is not valid`);
+    if (!verifyName(namespace)) {
+      throw new ConfigError(`Service name '${namespace}' is not valid`);
     }
 
     this.broker = server.broker;
@@ -50,7 +50,7 @@ export class BaseService {
         `Handle ${config.type} '${config.name}' name is not valid`
       );
     }
-    const name = `${this.name}.${config.name}`;
+    const name = `${this.namespace}.${config.name}`;
 
     // Add request and response record
     if (config.request && !this.server.storage.has(config.request)) {

@@ -3,9 +3,9 @@ import { ServiceSchema } from '../server/interface';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { BaseTransporter } from '../transporter';
-import { BadRequestError, DuplicateError } from '../error';
+import { BadRequestError } from '../error';
 import { RecordStorage } from '../schema';
-import { FETCH_SCHEMA_METHOD } from '../server/metadata-service';
+import { FETCH_SCHEMA_METHOD } from '../server/services/metadata-service';
 import { BrokerConfig } from '../interface';
 import {
   CommandMessage,
@@ -188,12 +188,12 @@ export class Client {
     // Inject header
     this.injectCommand(command, header);
 
-    try {
-      await compose({ body, header });
-    } catch (err) {
-      if (err instanceof DuplicateError) {
-        return;
-      } else throw err;
-    }
+    // try {
+    await compose({ body, header });
+    // } catch (err) {
+    //   if (err instanceof DuplicateError) {
+    //     return;
+    //   } else throw err;
+    // }
   }
 }

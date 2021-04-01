@@ -6,6 +6,9 @@ import { createTransporter } from './transporter/create-transporter';
 import { Server } from './server/server';
 import { ConfigError } from './error';
 import { OutboxProcessor } from './outbox/procesor';
+import { HandleType } from './server';
+import { MethodService } from './server/services/method-service';
+import { CommandService } from './server/services/command-service';
 
 export class Broker {
   readonly serviceName: string;
@@ -74,17 +77,20 @@ export class Broker {
   }
 
   /**
-   * Create a subservice
-   * This is can helpful for separate service with
-   * difference middlewares logic
+   * Create a method service with separate namespace and middleware
    */
-  createService(name: string) {
+  service(type: 'method', namespace: string): MethodService;
+  /**
+   * Create a command service with separate namespace and middleware
+   */
+  service(type: 'command', namespace: string): CommandService;
+  service(type: HandleType, namespace: string) {
     if (this.config.disableServer === true)
       throw new ConfigError(
         `Cannot create service with config 'disableServer' is true`
       );
 
-    return this.server.createService(name);
+    return this.server.service(type, namespace);
   }
 
   /**

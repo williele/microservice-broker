@@ -13,7 +13,7 @@ export interface CommandInfo {
   description?: string;
 }
 
-export type HandleType = 'method' | 'command';
+export type HandleType = 'method' | 'command' | 'saga';
 
 export interface ServiceSchema {
   serviceName: string;

@@ -5,6 +5,7 @@ import {
   MethodInfo,
   ServiceSchema,
   CommandInfo,
+  HandleType,
 } from './interface';
 import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
@@ -14,15 +15,16 @@ import { compose } from './compose';
 import { sendError } from './handlers';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
-import { MetadataService, METADATA_SERVICE } from './metadata-service';
+import { MetadataService, METADATA_SERVICE } from './services/metadata-service';
 import {
   BadRequestError,
   ConfigError,
   HandlerUnimplementError,
 } from '../error';
 import { RecordStorage } from '../schema';
-import { MethodService } from './method-service';
+import { MethodService } from './services/method-service';
 import { dirname, resolve } from 'path';
+import { CommandService } from './services/command-service';
 
 interface HandlerInfo {
   request: string;
@@ -52,6 +54,7 @@ export class Server {
     this.storage = new RecordStorage(config.server?.records || []);
     this.serializer = createSerializer(config.serializer, this.storage);
 
+    // Initialize defualt context properties
     // Default context
     this._context = Object.create({
       ...defaultContext,
@@ -74,8 +77,13 @@ export class Server {
     new MetadataService(this);
   }
 
+  /**
+   * Broker start
+   * Subscribe to rpc subject
+   */
   async start() {
     if (this._started === true) {
+      // Throw error if server try to start twice
       throw new ConfigError(`Broker server try to start twice`);
     }
 
@@ -91,6 +99,7 @@ export class Server {
     const handle = compose([this.handle]);
     const subject = `${this.broker.serviceName}_rpc`;
 
+    // Subscribe to rpc
     this.broker.transporter.subscribe(subject, (packet) => {
       const ctx = this.createContext(packet);
 
@@ -104,9 +113,13 @@ export class Server {
       });
     });
 
+    // Mark as started
     this._started = true;
   }
 
+  /**
+   * Write server schema into file if broker config has set schema file
+   */
   private async schemaFile() {
     this.config.logger?.log('Write schema file');
 
@@ -118,7 +131,7 @@ export class Server {
   }
 
   /**
-   * Handle middleware
+   * Handle rpc request
    * @param ctx
    */
   private handle: Middleware = async (ctx: Context) => {
@@ -144,6 +157,8 @@ export class Server {
 
   /**
    * Create context for handling
+   * Each request has separate context
+   * Using Object.create for context creation peformance
    * @param packet
    * @returns
    */
@@ -161,12 +176,29 @@ export class Server {
   }
 
   /**
-   * Create a subservice
+   * Create a sub service by type and namespace
+   * @param type
+   * @param namespace
+   * @returns
    */
-  createService(name: string) {
-    return new MethodService(this, name);
+  service(type: HandleType, namespace: string) {
+    switch (type) {
+      case 'method':
+        return new MethodService(this, namespace);
+
+      case 'command':
+        return new CommandService(this, namespace);
+
+      default:
+        throw new ConfigError(`Unknown service type '${type}'`);
+    }
   }
 
+  /**
+   * Construct a service schema an cache it
+   * These service schema only contain useful information for external client
+   * @returns Service schema
+   */
   getSchema(): ServiceSchema {
     if (this._schema) return this._schema;
     // Construct methods records
@@ -209,6 +241,10 @@ export class Server {
     return this._schema;
   }
 
+  /**
+   * Add handler with type
+   * @param config
+   */
   addHandler(config: {
     name: string;
     type: string;

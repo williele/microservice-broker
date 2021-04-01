@@ -1,14 +1,19 @@
-import { Context } from './context';
-import { sendResponse } from './handlers';
-import { AddCommandConfig, AddMethodConfig, Middleware } from './interface';
-import { Server } from './server';
+import { Context } from '../context';
+import { sendResponse } from '../handlers';
+import { AddMethodConfig, Middleware } from '../interface';
+import { Server } from '../server';
 import { BaseService } from './service';
 
 export class MethodService extends BaseService {
-  constructor(server: Server, name: string) {
-    super(server, name);
+  constructor(server: Server, namespace: string) {
+    super(server, namespace);
   }
 
+  /**
+   * Add a method handler
+   * @param config
+   * @returns
+   */
   method(config: AddMethodConfig) {
     const middlewares = this.normalizeMiddlewares(config.middlewares);
 
@@ -22,21 +27,7 @@ export class MethodService extends BaseService {
       type: 'method',
       request,
       response,
-      middlewares: [handleMethod(request, response), ...middlewares],
-    });
-  }
-
-  command(config: AddCommandConfig) {
-    const middlewares = this.normalizeMiddlewares(config.middlewares);
-
-    // Add request
-    const request = this.server.storage.add(config.request);
-
-    return this.handle({
-      ...config,
-      type: 'command',
-      request,
-      middlewares: [handleCommand(request), ...middlewares],
+      middlewares: [handleCompose(request, response), ...middlewares],
     });
   }
 }
@@ -49,7 +40,7 @@ export class MethodService extends BaseService {
  * @param response
  * @returns
  */
-function handleMethod(request: string, response: string): Middleware {
+function handleCompose(request: string, response: string): Middleware {
   return async (ctx: Context, next) => {
     ctx.body = ctx.serializer.decodeFor(
       'method_request',
@@ -69,23 +60,6 @@ function handleMethod(request: string, response: string): Middleware {
       ctx.res.body,
       ctx.startSpan('encode response')
     );
-
-    await sendResponse(ctx);
-  };
-}
-
-function handleCommand(request: string): Middleware {
-  return async (ctx: Context, next) => {
-    ctx.body = ctx.serializer.decodeFor(
-      'command_request',
-      request,
-      ctx.packet.body,
-      ctx.startSpan('decode request')
-    );
-
-    await next();
-    // Empty body
-    ctx.res.body = Buffer.from([]);
 
     await sendResponse(ctx);
   };

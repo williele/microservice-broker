@@ -10,11 +10,13 @@ export enum BrokerErrorCode {
 
   // Handler
   INTERNAL = 'InternalError',
-  HANDLER_UNIMPLEMENT = 'HandlerUnimplementError',
   REQUEST_TIME_OUT = 'RequestTimeOut',
+  BAD_RESPONSE = 'BadResponse',
+
+  // Cause by client
+  HANDLER_UNIMPLEMENT = 'HandlerUnimplementError',
   VALIDATE = 'ValidateError',
   BAD_REQUEST = 'BadRequest',
-  BAD_RESPONSE = 'BadResponse',
   NOT_FOUND = 'NotFoundError',
   UNAUTHORIZATION = 'AuthorizationError',
   FORBIDDEN = 'ForbiddenError',
