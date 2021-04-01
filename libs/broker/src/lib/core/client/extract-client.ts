@@ -1,7 +1,7 @@
 import { Broker } from '../broker';
 import { ExtractClientMethod, ExtractCommandMessage } from '../interface';
 import { Client } from './client';
-import { Packet } from './interface';
+import { CommandHandler, Packet } from './interface';
 
 /**
  * Create a client model for another service
@@ -38,5 +38,10 @@ export class ExtractClient {
         ...defaultHeader,
         ...header,
       });
+  }
+
+  protected createCommandHandler<T = unknown>(command: string) {
+    return (handler: CommandHandler<T>) =>
+      this.client.commandHandler<T>(command, handler);
   }
 }

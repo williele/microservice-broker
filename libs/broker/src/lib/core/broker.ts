@@ -99,8 +99,7 @@ export class Broker {
    * @returns
    */
   command(message: CommandMessage) {
-    const client = this.createClient(message.service);
-    return client.command(message);
+    return this.createClient(message.service).command(message);
   }
 
   /**

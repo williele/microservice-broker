@@ -3,11 +3,18 @@ import { ServiceSchema } from '../server/interface';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import { BaseTransporter } from '../transporter';
-import { BadRequestError } from '../error';
+import {
+  BadRequestError,
+  BrokerError,
+  clientCauseErrors,
+  ConfigError,
+  DuplicateError,
+} from '../error';
 import { RecordStorage } from '../schema';
 import { FETCH_SCHEMA_METHOD } from '../server/services/metadata-service';
 import { BrokerConfig } from '../interface';
 import {
+  CommandHandler,
   CommandMessage,
   Interceptor,
   InterceptorCompose,
@@ -29,6 +36,8 @@ export class Client {
   // cache
   private methodComposes: Record<string, InterceptorCompose> = {};
   private commandComposes: Record<string, InterceptorCompose> = {};
+
+  private commandHandlers: Record<string, CommandHandler> = {};
 
   constructor(
     private readonly broker: Broker,
@@ -65,6 +74,9 @@ export class Client {
   async fetchSchema(header: Packet['header'] = {}): Promise<ServiceSchema> {
     if (this.schema) return this.schema;
 
+    // Start broker first
+    await this.broker.start();
+
     const compose = composeInterceptor([
       request(this.rpcSubject, this.transporter),
     ]);
@@ -76,6 +88,7 @@ export class Client {
       throw new BadRequestError(`Fetch schema response is not a buffer`);
     }
     this.setSchema(JSON.parse(result.body.toString()));
+
     return this.schema;
   }
 
@@ -139,6 +152,17 @@ export class Client {
     };
   }
 
+  /**
+   * Add a command handler, receive message and en error if error as arguments
+   * @param command
+   * @param handler
+   */
+  commandHandler<T = unknown>(command: string, handler: CommandHandler<T>) {
+    if (this.commandHandlers[command])
+      throw new ConfigError(`Command handler '${command}' already exists`);
+    this.commandHandlers[command] = handler;
+  }
+
   private async composeCommand(
     command: string,
     header: Packet['header'] = {}
@@ -187,13 +211,32 @@ export class Client {
     const compose = await this.composeCommand(command, header);
     // Inject header
     this.injectCommand(command, header);
+    const handler = this.commandHandlers[message.command];
 
-    // try {
-    await compose({ body, header });
-    // } catch (err) {
-    //   if (err instanceof DuplicateError) {
-    //     return;
-    //   } else throw err;
-    // }
+    // Decode the header
+    let request;
+    if (handler) {
+      request = this.serializer.decode(
+        this.schema.commands[command].request,
+        body
+      );
+    }
+
+    try {
+      await compose({ body, header });
+      if (handler) await handler(request);
+    } catch (err) {
+      // Ignore if error is duplicate
+      if (err instanceof DuplicateError) return;
+      else if (
+        err instanceof BrokerError &&
+        clientCauseErrors.includes(err.code)
+      ) {
+        if (handler) await handler(request, err);
+        else return;
+      } else {
+        throw err;
+      }
+    }
   }
 }

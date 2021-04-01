@@ -9,6 +9,7 @@ export enum BrokerErrorCode {
   TRANSPORTER = 'TransporterError',
 
   // Handler
+  // Case by server
   INTERNAL = 'InternalError',
   REQUEST_TIME_OUT = 'RequestTimeOut',
   BAD_RESPONSE = 'BadResponse',
@@ -23,6 +24,17 @@ export enum BrokerErrorCode {
   CONFLICT = 'Conflict',
   DUPLICATE = 'Duplicate',
 }
+
+export const clientCauseErrors: string[] = [
+  BrokerErrorCode.HANDLER_UNIMPLEMENT,
+  BrokerErrorCode.VALIDATE,
+  BrokerErrorCode.BAD_REQUEST,
+  BrokerErrorCode.NOT_FOUND,
+  BrokerErrorCode.UNAUTHORIZATION,
+  BrokerErrorCode.FORBIDDEN,
+  BrokerErrorCode.CONFLICT,
+  BrokerErrorCode.DUPLICATE,
+];
 
 export class BrokerError extends Error {
   constructor(public readonly code: string, message: string) {

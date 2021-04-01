@@ -1,6 +1,7 @@
 import { Context } from '../context';
 import { sendResponse } from '../handlers';
-import { AddCommandConfig, Middleware } from '../interface';
+import { Middleware } from '../interface';
+import { AddCommandConfig } from './interface';
 import { Server } from '../server';
 import { BaseService } from './service';
 

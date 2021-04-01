@@ -1,4 +1,5 @@
-import { AddHandlerConfig, Middleware } from '../interface';
+import { Middleware } from '../interface';
+import { AddHandlerConfig } from './interface';
 import { verifyName } from '../../utils/verify-name';
 import { compose } from '../compose';
 import { Broker } from '../../broker';

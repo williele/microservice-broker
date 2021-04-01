@@ -185,10 +185,8 @@ export class Server {
     switch (type) {
       case 'method':
         return new MethodService(this, namespace);
-
       case 'command':
         return new CommandService(this, namespace);
-
       default:
         throw new ConfigError(`Unknown service type '${type}'`);
     }
@@ -203,7 +201,7 @@ export class Server {
     if (this._schema) return this._schema;
     // Construct methods records
     const methods: Record<string, MethodInfo> = Object.entries(
-      this._handlers['method']
+      this._handlers['method'] || {}
     ).reduce((a, [name, info]) => {
       // Hide metadata method
       if (name.startsWith(METADATA_SERVICE)) return a;
@@ -219,7 +217,7 @@ export class Server {
 
     // Construct command records
     const commands: Record<string, CommandInfo> = Object.entries(
-      this._handlers['command']
+      this._handlers['command'] || {}
     ).reduce((a, [name, info]) => {
       return {
         ...a,

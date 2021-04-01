@@ -1,9 +1,15 @@
+import { BrokerError } from '../error';
+
 /**
  * Request and response packet
  */
 export interface Packet<B = unknown> {
   body: B;
   header: Record<string, string>;
+}
+
+export interface CommandHandler<T = unknown> {
+  (message: T, error?: BrokerError): Promise<void> | void;
 }
 
 /**
@@ -13,6 +19,7 @@ export interface Packet<B = unknown> {
 export interface CommandMessage {
   service: string;
   command: string;
+  // Packet
   body: Buffer;
   header: Packet['header'];
 }
