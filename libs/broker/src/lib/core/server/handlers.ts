@@ -1,37 +1,81 @@
 import { Tags } from 'opentracing';
-import { BadResponseError, BrokerError, InternalError } from '../error';
 import { spanLogError } from '../error/span';
+import { RecordStorage } from '../schema';
 import { Context } from './context';
-import { Middleware, HandleType } from './interface';
+import {
+  Middleware,
+  HandleType,
+  AddMethodConfig,
+  AddCommandConfig,
+} from './interface';
+import { sendResponse } from './utils';
 
 /**
- * Helper function for sending response
- * @param ctx
+ * Method handler middlewares
+ * @param storage
+ * @param config
+ * @returns
  */
-export function sendResponse(ctx: Context) {
-  const reply = ctx.header('reply');
-  if (!reply) return;
-  if (!(ctx.res.body instanceof Buffer)) {
-    throw new BadResponseError('response is not buffer');
-  }
+export function methodHandler(
+  storage: RecordStorage,
+  config: AddMethodConfig
+): {
+  request: string;
+  response: string;
+  middlewares: Middleware[];
+} {
+  // Add request
+  const request = storage.add(config.request);
+  // Add response
+  const response = storage.add(config.response);
 
-  return ctx.transporter.send(reply, {
-    header: ctx.res.header,
-    body: ctx.res.body,
-  });
+  // Encode and decode everything
+  const middlewar = async (ctx: Context, next) => {
+    // Decode request
+    ctx.body = ctx.serializer.decodeFor('request', request, ctx.packet.body);
+    await next();
+    // Encode response
+    ctx.res.body = ctx.serializer.encodeFor('response', response, ctx.res.body);
+    await sendResponse(ctx);
+  };
+
+  return {
+    request,
+    response,
+    middlewares: [middlewar],
+  };
 }
 
-export function sendError(ctx: Context, err: Error) {
-  const error =
-    err instanceof BrokerError
-      ? err
-      : new InternalError(`Unknown error${err.message && `: ${err.message}`}`);
+/**
+ * Command handler middlewares
+ * @param storage
+ * @param config
+ * @returns
+ */
+export function commandHandler(
+  storage: RecordStorage,
+  config: AddCommandConfig
+): {
+  request: string;
+  middlewares: Middleware[];
+} {
+  // Add request
+  const request = storage.add(config.request);
 
-  ctx.setHeader('error', error.code);
-  ctx.setHeader('error.message', error.message);
-  ctx.response(Buffer.from([]));
+  // Encode request body and send back empty body
+  const middleware = async (ctx: Context, next) => {
+    // Decode request
+    ctx.body = ctx.serializer.decodeFor('request', request, ctx.packet.body);
+    await next();
+    // Empty body
+    ctx.res.body = Buffer.from([]);
+    await sendResponse(ctx);
+  };
 
-  return sendResponse(ctx);
+  return {
+    request,
+    middlewares: [middleware],
+  };
 }
 
 export function traceHandler(

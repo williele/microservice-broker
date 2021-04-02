@@ -1,14 +1,12 @@
 import { Tracer } from 'opentracing';
 import { BrokerConfig, ID } from './interface';
 import { BaseTransporter } from './transporter';
-import { Client, CommandMessage } from './client';
+import { Client, CommandMessage, Packet } from './client';
 import { createTransporter } from './transporter/create-transporter';
 import { Server } from './server/server';
 import { ConfigError } from './error';
 import { OutboxProcessor } from './outbox/procesor';
-import { HandleType } from './server';
-import { MethodService } from './server/services/method-service';
-import { CommandService } from './server/services/command-service';
+import { AddHandlerConfig } from './server';
 
 export class Broker {
   readonly serviceName: string;
@@ -77,20 +75,15 @@ export class Broker {
   }
 
   /**
-   * Create a method service with separate namespace and middleware
+   * Add handler
+   * @param config
    */
-  service(type: 'method', namespace: string): MethodService;
-  /**
-   * Create a command service with separate namespace and middleware
-   */
-  service(type: 'command', namespace: string): CommandService;
-  service(type: HandleType, namespace: string) {
-    if (this.config.disableServer === true)
+  add(config: AddHandlerConfig) {
+    if (!this.server)
       throw new ConfigError(
-        `Cannot create service with config 'disableServer' is true`
+        `Cannot add handler: Servive broker server is not avaiable`
       );
-
-    return this.server.service(type, namespace);
+    return this.server.add(config);
   }
 
   /**
@@ -100,6 +93,23 @@ export class Broker {
    */
   command(message: CommandMessage) {
     return this.createClient(message.service).command(message);
+  }
+
+  /**
+   * Call method
+   * @param service
+   * @param method
+   * @param input
+   * @param header
+   * @returns
+   */
+  method(
+    service: string,
+    method: string,
+    input: unknown,
+    header: Packet['header'] = {}
+  ) {
+    return this.createClient(service).call(method, input, header);
   }
 
   /**

@@ -5,26 +5,25 @@ import {
   MethodInfo,
   ServiceSchema,
   CommandInfo,
-  HandleType,
+  AddHandlerConfig,
 } from './interface';
 import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { promises } from 'fs';
 import { compose } from './compose';
-import { sendError } from './handlers';
+import { commandHandler, methodHandler } from './handlers';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
-import { MetadataService, METADATA_SERVICE } from './services/metadata-service';
 import {
   BadRequestError,
   ConfigError,
   HandlerUnimplementError,
 } from '../error';
 import { RecordStorage } from '../schema';
-import { MethodService } from './services/method-service';
 import { dirname, resolve } from 'path';
-import { CommandService } from './services/command-service';
+import { normalizeMiddlewares, sendError, sendResponse } from './utils';
+import { verifyName } from '../utils/verify-name';
 
 interface HandlerInfo {
   request: string;
@@ -36,6 +35,14 @@ interface HandlerInfo {
 export class Server {
   public readonly serializer: BaseSerializer;
   private _handlers: Record<string, Record<string, HandlerInfo>> = {};
+
+  private _metadataHandlers: Record<string, MiddlewareCompose> = {};
+
+  private _methods: Record<string, MethodInfo> = {};
+  private _methodHandlers: Record<string, MiddlewareCompose> = {};
+
+  private _commands: Record<string, CommandInfo> = {};
+  private _commandHandlers: Record<string, MiddlewareCompose> = {};
 
   // Cached
   private _schema: ServiceSchema;
@@ -73,8 +80,28 @@ export class Server {
       },
     } as Response);
 
-    // Default services
-    new MetadataService(this);
+    // Add some metadata handler
+    this.initMetadataHandler();
+  }
+
+  /**
+   * Server serve metadata about itself
+   * such as service schema
+   */
+  private initMetadataHandler() {
+    this._metadataHandlers = {
+      // Serve service schema
+      schema: compose([
+        // Send schema string directly
+        async (ctx) => {
+          const schema = this.getSchema();
+          const buffer = Buffer.from(JSON.stringify(schema));
+          ctx.response(buffer);
+
+          await sendResponse(ctx);
+        },
+      ]),
+    };
   }
 
   /**
@@ -136,21 +163,41 @@ export class Server {
    */
   private handle: Middleware = async (ctx: Context) => {
     // Extract from header
-    const method = ctx.header('method');
-    const command = ctx.header('command');
+    const type = ctx.header('type');
+    const name = ctx.header('name');
 
-    // If request is method
-    if (method) {
-      const methodInfo = this._handlers['method'][method];
-      if (!methodInfo)
-        throw new HandlerUnimplementError(`method '${method}' not exists`);
-      await methodInfo.handler(ctx);
-    } else if (command) {
-      const commandInfo = this._handlers['command'][command];
-      if (!commandInfo)
-        throw new HandlerUnimplementError(`command '${command}' not exists`);
-      await commandInfo.handler(ctx);
+    if (!name) {
+      throw new BadRequestError(`missing name header`);
     }
+
+    // Metadata handler
+    else if (type === 'metadata') {
+      const handler = this._metadataHandlers[name];
+      if (!handler)
+        throw new HandlerUnimplementError(`metadata '${name}' is undefined`);
+      await handler(ctx);
+    }
+
+    // Method handler
+    else if (type === 'method') {
+      const handler = this._methodHandlers[name];
+      if (!handler)
+        throw new HandlerUnimplementError(
+          `method '${name}' handler is missing`
+        );
+      await handler(ctx);
+    }
+
+    // Command handler
+    else if (type === 'command') {
+      const handler = this._commandHandlers[name];
+      if (!handler)
+        throw new HandlerUnimplementError(
+          `command '${name}' handler is missing`
+        );
+      await handler(ctx);
+    }
+
     // Unknown request
     else throw new BadRequestError('unknown handler');
   };
@@ -176,101 +223,82 @@ export class Server {
   }
 
   /**
-   * Create a sub service by type and namespace
-   * @param type
-   * @param namespace
-   * @returns
-   */
-  service(type: HandleType, namespace: string) {
-    switch (type) {
-      case 'method':
-        return new MethodService(this, namespace);
-      case 'command':
-        return new CommandService(this, namespace);
-      default:
-        throw new ConfigError(`Unknown service type '${type}'`);
-    }
-  }
-
-  /**
    * Construct a service schema an cache it
    * These service schema only contain useful information for external client
    * @returns Service schema
    */
   getSchema(): ServiceSchema {
     if (this._schema) return this._schema;
-    // Construct methods records
-    const methods: Record<string, MethodInfo> = Object.entries(
-      this._handlers['method'] || {}
-    ).reduce((a, [name, info]) => {
-      // Hide metadata method
-      if (name.startsWith(METADATA_SERVICE)) return a;
-      return {
-        ...a,
-        [name]: {
-          request: info.request,
-          response: info.response,
-          description: info.description || null,
-        } as MethodInfo,
-      };
-    }, {});
-
-    // Construct command records
-    const commands: Record<string, CommandInfo> = Object.entries(
-      this._handlers['command'] || {}
-    ).reduce((a, [name, info]) => {
-      return {
-        ...a,
-        [name]: {
-          request: info.request,
-          description: info.description || null,
-        } as CommandInfo,
-      };
-    }, {});
 
     this._schema = {
       serviceName: this.broker.serviceName,
       transporter: this.broker.transporter.transporterName,
       serializer: this.serializer.serializerName,
       records: this.storage.records,
-      methods: methods,
-      commands: commands,
+      methods: this._methods,
+      commands: this._commands,
     };
     return this._schema;
   }
 
   /**
-   * Add handler with type
+   * Add handler
+   * either method, command or signal
    * @param config
    */
-  addHandler(config: {
-    name: string;
-    type: string;
-    request: string;
-    response?: string;
-    handler: MiddlewareCompose;
-    description?: string;
-  }) {
-    if (this._started === true) {
-      throw new ConfigError(
-        `Broker server cannot add new handler after started`
-      );
+  add(config: AddHandlerConfig) {
+    const middlewares = normalizeMiddlewares(config.middlewares);
+    const name = config.name;
+    if (!verifyName(name)) {
+      throw new ConfigError(`Handler '${name}' is invalid`);
     }
 
-    const { name, type } = config;
-    if (this._handlers[type]?.[name]) {
-      throw new ConfigError(`Handler ${config.type} '${name}' already exists`);
+    // Add method handler
+    if (config.type === 'method') {
+      if (this._methods[name]) {
+        throw new ConfigError(`Method '${name}' already define`);
+      }
+
+      const handler = methodHandler(this.storage, config);
+      // Information
+      this._methods[name] = {
+        request: handler.request,
+        response: handler.response,
+        deprecated: config.deprecated,
+        description: config.description,
+      };
+      // Handler
+      this._methodHandlers[name] = compose([
+        ...handler.middlewares,
+        ...middlewares,
+        config.handler,
+      ]);
     }
 
-    if (!this._handlers[type]) {
-      this._handlers[type] = {};
+    // Add command handler
+    else if (config.type === 'command') {
+      if (this._commands[name]) {
+        throw new ConfigError(`Command '${name}' already define`);
+      }
+
+      const handler = commandHandler(this.storage, config);
+      // Information
+      this._commands[name] = {
+        request: handler.request,
+        deprecated: config.deprecated,
+        description: config.description,
+      };
+      // Handler
+      this._commandHandlers[name] = compose([
+        ...handler.middlewares,
+        ...middlewares,
+        config.handler,
+      ]);
     }
 
-    this._handlers[type][name] = {
-      request: config.request,
-      response: config.response,
-      description: config.description,
-      handler: config.handler,
-    };
+    // Unknown
+    else {
+      throw new ConfigError(`Unknown handler type`);
+    }
   }
 }

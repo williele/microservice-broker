@@ -31,6 +31,7 @@ export function serializeRequest(
     if (!(result['body'] instanceof Buffer)) {
       throw new BadResponseError(`Bad response body. Isn't a Buffer`);
     }
+
     result['body'] = serializer.decodeFor(
       'method_response',
       response,

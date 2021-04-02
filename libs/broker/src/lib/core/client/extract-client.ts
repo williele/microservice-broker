@@ -19,6 +19,10 @@ export class ExtractClient {
     this.client = broker.createClient(serviceName);
   }
 
+  schema() {
+    return this.client.fetchSchema();
+  }
+
   protected createMethod<I = unknown, O = unknown>(
     name: string,
     defaultHeader: Packet['header'] = {}

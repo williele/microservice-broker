@@ -11,7 +11,6 @@ import {
   DuplicateError,
 } from '../error';
 import { RecordStorage } from '../schema';
-import { FETCH_SCHEMA_METHOD } from '../server/services/metadata-service';
 import { BrokerConfig } from '../interface';
 import {
   CommandHandler,
@@ -52,14 +51,20 @@ export class Client {
     this.transporter = this.broker.transporter;
   }
 
-  private injectMethod(method: string, header: Packet['header'] = {}) {
-    header['method'] = method;
+  /**
+   * Inject conventional header for sending request
+   * @param type
+   * @param name
+   * @param header
+   */
+  private injectHeader(
+    type: string,
+    name: string,
+    header: Packet['header'] = {}
+  ) {
     header['service'] = this.broker.serviceName;
-  }
-
-  private injectCommand(command: string, header: Packet['header'] = {}) {
-    header['command'] = command;
-    header['service'] = this.broker.serviceName;
+    header['type'] = type;
+    header['name'] = name;
   }
 
   private setSchema(schema: ServiceSchema) {
@@ -82,7 +87,8 @@ export class Client {
     ]);
 
     // Inject header
-    this.injectMethod(FETCH_SCHEMA_METHOD, header);
+    this.injectHeader('metadata', 'schema', header);
+
     const result = await compose({ body: Buffer.from([]), header });
     if (!(result.body instanceof Buffer)) {
       throw new BadRequestError(`Fetch schema response is not a buffer`);
@@ -190,6 +196,8 @@ export class Client {
     header: Packet['header'] = {}
   ): Promise<Packet<O>> {
     const compose = await this.composeMethod(method, header);
+    // Inject header
+    this.injectHeader('method', method, header);
 
     const response = await compose({ body, header });
     return response as Packet<O>;
@@ -210,7 +218,7 @@ export class Client {
 
     const compose = await this.composeCommand(command, header);
     // Inject header
-    this.injectCommand(command, header);
+    this.injectHeader('command', command, header);
     const handler = this.commandHandlers[message.command];
 
     // Decode the header

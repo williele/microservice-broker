@@ -2,8 +2,27 @@ import {
   Broker,
   Context,
   ExtractClient,
-  ValidateError,
+  Field,
+  Record,
 } from '@williele/broker';
+
+@Record()
+class InitCommand {
+  @Field(1, 'string')
+  name: string;
+}
+
+@Record()
+class HelloInput {
+  @Field(1, 'string')
+  name: string;
+}
+
+@Record()
+class HelloMessage {
+  @Field(1, 'string')
+  message: string;
+}
 
 const serviceBroker = new Broker({
   serviceName: 'bar',
@@ -15,18 +34,24 @@ const serviceBroker = new Broker({
     },
   },
 });
-const service = serviceBroker.service('command', 'main');
-service.command({
+serviceBroker.add({
+  type: 'command',
   name: 'init',
-  request: {
-    name: 'InitCommand',
-    fields: {
-      name: { order: 1, type: 'string' },
-    },
-  },
-  async handler(ctx: Context<{ name: string }>) {
+  request: InitCommand,
+  async handler(ctx: Context<InitCommand>) {
     console.log(ctx.body);
-    throw ValidateError.fields({ name: 'unique' });
+  },
+});
+
+serviceBroker.add({
+  type: 'method',
+  name: 'hello',
+  request: HelloInput,
+  response: HelloMessage,
+  handler(ctx: Context<HelloInput, HelloMessage>) {
+    ctx.response({
+      message: `Hello ${ctx.body.name}`,
+    });
   },
 });
 
@@ -46,24 +71,40 @@ class TestClient extends ExtractClient {
     super(broker, 'bar');
   }
 
-  cmain_init = this.createCommandMessage<{ name: string }>('main.init');
-  cmain_init_handler = this.createCommandHandler<{ name: string }>('main.init');
+  methods = {
+    hello: this.createMethod<HelloInput, HelloMessage>('hello'),
+  };
+
+  commands = {
+    init: this.createCommandMessage<InitCommand>('init'),
+  };
+
+  commandHandlers = {
+    init: this.createCommandHandler<InitCommand>('init'),
+  };
+
+  signal = {};
 }
 
 async function main() {
   const client = new TestClient(clientBroker);
-  client.cmain_init_handler((request, error) => {
+  client.commandHandlers.init((request, error) => {
     if (error) console.log(error);
     console.log(request.name);
   });
 
   await serviceBroker.start();
 
-  const value: { name: string } = { name: 'williele' };
-  const message = await client.cmain_init(value);
+  // Schema
+  console.log(await client.schema());
 
+  // Method
+  const hello = await client.methods.hello({ name: 'Williele' });
+  console.log(hello);
+
+  // Command
+  const message = await client.commands.init({ name: 'williele' });
   console.log(message);
-
   clientBroker.command(message);
 }
 
