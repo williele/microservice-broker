@@ -1,10 +1,11 @@
 import { Broker } from './broker';
+import { BadResponseError } from './error';
 import { BrokerConfig } from './interface';
 import { RecordStorage } from './schema';
 import { BaseSerializer } from './serializer';
 import { createSerializer } from './serializer/create-serializer';
 import { ServiceSchema } from './server';
-import { fetchSchema } from './utils/metadata';
+import { subjectRpc } from './utils/subject-name';
 
 /**
  * Dependencies management
@@ -19,6 +20,25 @@ export class Dependencies {
     private readonly broker: Broker,
     private readonly _config: BrokerConfig
   ) {}
+
+  private async fetchSchema(service: string): Promise<ServiceSchema> {
+    const header = {
+      service: this.broker.serviceName,
+      type: 'metadata',
+      name: 'schema',
+    };
+    const body = Buffer.from([]);
+
+    const response = await this.broker.transporter.sendRequest(
+      subjectRpc(service),
+      { header, body }
+    );
+    if (!(response.body instanceof Buffer)) {
+      throw new BadResponseError(`Fetch schema response body is not valid`);
+    }
+
+    return JSON.parse(response.body.toString());
+  }
 
   addDependency(service: string | ServiceSchema) {
     if (typeof service === 'string') {
@@ -53,7 +73,7 @@ export class Dependencies {
   async getSchema(service: string): Promise<ServiceSchema> {
     if (this.schemas[service]) return this.schemas[service];
     else {
-      const schema = await fetchSchema(service, this.broker.transporter);
+      const schema = await this.fetchSchema(service);
       this.addDependencySchema(schema);
       return schema;
     }

@@ -6,6 +6,7 @@ import {
   ServiceSchema,
   CommandInfo,
   AddHandlerConfig,
+  SignalInfo,
 } from './interface';
 import { BrokerConfig, TransportPacket } from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
@@ -38,6 +39,10 @@ export class Server {
   private _commands: Record<string, CommandInfo> = {};
   private _commandHandlers: Record<string, MiddlewareCompose> = {};
 
+  /**
+   * Signal belong to this server
+   */
+  private _signals: Record<string, SignalInfo> = {};
   private _signalHandlers: Record<
     string,
     Record<string, MiddlewareCompose>
@@ -114,6 +119,23 @@ export class Server {
       throw new ConfigError(`Broker server try to start twice`);
     }
 
+    if (this.config.server?.signals) {
+      // Verify signals
+      Object.entries(this.config.server.signals).forEach(([name, config]) => {
+        // Verify name
+        if (!verifyName(name)) {
+          throw new ConfigError(`Signal name '${name}' is not valid`);
+        }
+
+        const record = this.storage.add(config.record);
+        this._signals[name] = {
+          request: record,
+          deprecated: config.deprecated,
+          description: config.description,
+        };
+      });
+    }
+
     // Verify schema
     this.storage.verify();
     this.getSchema();
@@ -163,6 +185,7 @@ export class Server {
    */
   private handle: Middleware = async (ctx: Context) => {
     // Extract from header
+    const service = ctx.header('service');
     const type = ctx.header('type');
     const name = ctx.header('name');
 
@@ -174,7 +197,7 @@ export class Server {
     else if (type === 'metadata') {
       const handler = this._metadataHandlers[name];
       if (!handler)
-        throw new HandlerUnimplementError(`metadata '${name}' is undefined`);
+        throw new HandlerUnimplementError(`Metadata '${name}' is undefined`);
       await handler(ctx);
     }
 
@@ -183,7 +206,7 @@ export class Server {
       const handler = this._methodHandlers[name];
       if (!handler)
         throw new HandlerUnimplementError(
-          `method '${name}' handler is missing`
+          `Method '${name}' handler is missing`
         );
       await handler(ctx);
     }
@@ -193,19 +216,44 @@ export class Server {
       const handler = this._commandHandlers[name];
       if (!handler)
         throw new HandlerUnimplementError(
-          `command '${name}' handler is missing`
+          `Command '${name}' handler is missing`
         );
       await handler(ctx);
     }
 
-    // Signal
+    // Signal handler
     else if (type === 'signal') {
-      //
+      const handler = this._signalHandlers[service]?.[name];
+      if (!handler)
+        throw new HandlerUnimplementError(
+          `Signal handler for '${name}' from '${service}' is missing`
+        );
+      await handler(ctx);
     }
 
     // Unknown request
     else throw new BadRequestError('unknown handler');
   };
+
+  /**
+   * Encode a signal record
+   * @param name
+   * @param val
+   * @returns
+   */
+  encodeSignal<R = unknown>(name: string, val: R) {
+    if (!this._signals[name]) {
+      throw new BadRequestError(
+        `Signal '${name}' is undefined. Or broker is not yet start`
+      );
+    }
+
+    return this.serializer.encodeFor(
+      'signal',
+      this._signals[name].request,
+      val
+    );
+  }
 
   /**
    * Create context for handling
@@ -242,7 +290,7 @@ export class Server {
       records: this.storage.records,
       methods: this._methods,
       commands: this._commands,
-      signals: {},
+      signals: this._signals,
     };
     return this._schema;
   }

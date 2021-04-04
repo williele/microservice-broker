@@ -83,6 +83,12 @@ export function commandHandler(
   };
 }
 
+/**
+ * Signal handler middlewares
+ * @param dependencies
+ * @param config
+ * @returns
+ */
 export function signalHandler(
   dependencies: Dependencies,
   config: AddSignalConfig

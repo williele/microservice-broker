@@ -8,6 +8,14 @@ import type { QueueOptions } from 'bull';
 
 export type ID = string | number;
 
+export interface SignalsConfig {
+  [name: string]: {
+    description?: string;
+    deprecated?: boolean;
+    record: RecordDefinition;
+  };
+}
+
 export interface BrokerConfig {
   serviceName: string;
   serializer: SerializerConfig;
@@ -25,7 +33,7 @@ export interface BrokerConfig {
     /**
      * List of signal this broker may generate
      */
-    signals?: Record<string, RecordDefinition>;
+    signals?: SignalsConfig;
     /**
      * If true, all method is enable tracing by default
      */

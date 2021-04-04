@@ -18,6 +18,12 @@ class HelloMessage {
   message: string;
 }
 
+@Record()
+class InitSignal {
+  @Field(1, 'string')
+  message: string;
+}
+
 const serviceBroker = new Broker({
   serviceName: 'bar',
   serializer: { name: 'arvo' },
@@ -27,7 +33,13 @@ const serviceBroker = new Broker({
       servers: ['http://localhost:4444'],
     },
   },
+  server: {
+    signals: {
+      init: { record: InitSignal },
+    },
+  },
 });
+
 serviceBroker.add({
   type: 'command',
   name: 'init',
@@ -60,49 +72,16 @@ const clientBroker = new Broker({
   },
 });
 
-// class TestClient extends ExtractClient {
-//   constructor(broker: Broker) {
-//     super(broker, 'bar');
-//   }
-
-//   methods = {
-//     hello: this.createMethod<HelloInput, HelloMessage>('hello'),
-//   };
-
-//   commands = {
-//     init: this.createCommandMessage<InitCommand>('init'),
-//   };
-
-//   commandHandlers = {
-//     init: this.createCommandHandler<InitCommand>('init'),
-//   };
-
-//   signal = {};
-// }
-
 async function main() {
-  // const client = new TestClient(clientBroker);
-  // client.commandHandlers.init((request, error) => {
-  //   if (error) console.log(error);
-  //   console.log(request.name);
-  // });
-
   await serviceBroker.start();
+
+  const signal = serviceBroker.encodeSignal<InitSignal>('init', {
+    message: 'awesome',
+  });
+  console.log(signal);
 
   const client = clientBroker.createClient('bar');
   console.log(await client.call('hello', { name: 'williele' }));
-
-  // Schema
-  // console.log(await client.schema());
-
-  // Method
-  // const hello = await client.methods.hello({ name: 'Williele' });
-  // console.log(hello);
-
-  // Command
-  // const message = await client.commands.init({ name: 'williele' });
-  // console.log(message);
-  // clientBroker.command(message);
 }
 
 main().catch((error) => console.error(error));

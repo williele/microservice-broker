@@ -137,6 +137,16 @@ export class Broker {
   }
 
   /**
+   * Encode a signal record
+   * @param name
+   * @param val
+   * @returns
+   */
+  encodeSignal<R = unknown>(name: string, val: R) {
+    return this.server.encodeSignal(name, val);
+  }
+
+  /**
    * Emit to make queue for sending command
    * @param message
    */

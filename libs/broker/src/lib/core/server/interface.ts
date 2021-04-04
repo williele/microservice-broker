@@ -16,6 +16,8 @@ export interface CommandInfo {
 
 export interface SignalInfo {
   request: string;
+  description?: string;
+  deprecated?: boolean;
 }
 
 export type HandleType = 'method' | 'command' | 'saga';
