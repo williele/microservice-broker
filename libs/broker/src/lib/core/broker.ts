@@ -6,7 +6,9 @@ import { createTransporter } from './transporter/create-transporter';
 import { Server } from './server/server';
 import { ConfigError } from './error';
 import { OutboxProcessor } from './outbox/procesor';
-import { AddHandlerConfig } from './server';
+import { AddHandlerConfig, ServiceSchema } from './server';
+import { BrokerClient } from './client/broker-client';
+import { fetchSchema } from './utils/metadata';
 
 export class Broker {
   readonly serviceName: string;
@@ -15,8 +17,11 @@ export class Broker {
 
   readonly outboxProcessor: OutboxProcessor;
 
-  private readonly server: Server;
+  readonly dependencies: Set<string> = new Set();
+  readonly dependencySchemas: Record<string, ServiceSchema> = {};
 
+  private readonly server: Server;
+  private readonly brokerClient: BrokerClient;
   private readonly clients: Record<string, Client> = {};
 
   private started = false;
@@ -34,10 +39,21 @@ export class Broker {
       this.server = new Server(this, config);
     }
 
+    // Broker client
+    this.brokerClient = new BrokerClient(this, config, this.server);
+
     // Add outbox
     if (this.config.outbox) {
       this.outboxProcessor = new OutboxProcessor(this, config);
     }
+  }
+
+  /**
+   * Get schema of the server
+   * @returns
+   */
+  getSchema() {
+    return this.server.getSchema();
   }
 
   /**
@@ -64,14 +80,57 @@ export class Broker {
   }
 
   /**
+   * Register a client for interact with another service
+   * Fetch it's schema and create new client
+   * This can useful for broker shorcut such as method, command
+   *
+   * If service name already
+   *
+   * If service schema given in broker then directly create client
+   * If service schema not given, then fetch it
+   */
+  addDependency(service: string | ServiceSchema) {
+    const name = typeof service === 'string' ? service : service.serviceName;
+
+    if (this.dependencies[name]) return;
+    if (typeof service === 'string') this.dependencies.add(service);
+    else {
+      this.dependencies.add(service.serviceName);
+      this.dependencySchemas[service.serviceName] = service;
+    }
+  }
+  addDependencies(services: (string | ServiceSchema)[]) {
+    services.forEach((service) => this.addDependency(service));
+  }
+
+  /**
+   * Get a dependency service schema
+   * If schema is not define then go fetch it
+   * @param service
+   * @returns
+   */
+  async getDependencySchema(service: string): Promise<ServiceSchema> {
+    if (this.dependencySchemas[service]) return this.dependencySchemas[service];
+    else {
+      const schema = await fetchSchema(service, this.transporter);
+      if (!this.dependencies.has(service)) this.dependencies.add(service);
+      this.dependencySchemas[service] = schema;
+      return schema;
+    }
+  }
+
+  /**
    * Create a client
    * @param service
    * @returns
    */
-  createClient(service: string) {
-    if (this.clients[service]) return this.clients[service];
-    this.clients[service] = new Client(this, this.config, service);
-    return this.clients[service];
+  createClient(service: string | ServiceSchema): Client {
+    const serviceName =
+      typeof service === 'string' ? service : service.serviceName;
+
+    if (this.clients[serviceName]) return this.clients[serviceName];
+    this.clients[serviceName] = new Client(this, this.config, service);
+    return this.clients[serviceName];
   }
 
   /**
@@ -87,29 +146,30 @@ export class Broker {
   }
 
   /**
-   * Send a command message
-   * @param message command message
-   * @returns
-   */
-  command(message: CommandMessage) {
-    return this.createClient(message.service).command(message);
-  }
-
-  /**
    * Call method
-   * @param service
+   * @param schema service schema for peer service
    * @param method
    * @param input
    * @param header
    * @returns
    */
   method(
-    service: string,
+    schema: ServiceSchema,
     method: string,
     input: unknown,
     header: Packet['header'] = {}
   ) {
-    return this.createClient(service).call(method, input, header);
+    return this.createClient(schema).call(method, input, header);
+  }
+
+  /**
+   * Send a command message
+   * @param schema service schema for peer service
+   * @param message command message
+   * @returns
+   */
+  command(schema: ServiceSchema, message: CommandMessage) {
+    return this.createClient(schema).command(message);
   }
 
   /**

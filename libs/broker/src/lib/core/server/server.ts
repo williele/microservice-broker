@@ -24,17 +24,10 @@ import { RecordStorage } from '../schema';
 import { dirname, resolve } from 'path';
 import { normalizeMiddlewares, sendError, sendResponse } from './utils';
 import { verifyName } from '../utils/verify-name';
-
-interface HandlerInfo {
-  request: string;
-  response?: string;
-  description?: string;
-  handler: MiddlewareCompose;
-}
+import { subjectRpc } from '../utils/subject-name';
 
 export class Server {
   public readonly serializer: BaseSerializer;
-  private _handlers: Record<string, Record<string, HandlerInfo>> = {};
 
   private _metadataHandlers: Record<string, MiddlewareCompose> = {};
 
@@ -43,6 +36,8 @@ export class Server {
 
   private _commands: Record<string, CommandInfo> = {};
   private _commandHandlers: Record<string, MiddlewareCompose> = {};
+
+  // private _signals: Record
 
   // Cached
   private _schema: ServiceSchema;
@@ -124,7 +119,7 @@ export class Server {
 
     // This can implement global middlwares
     const handle = compose([this.handle]);
-    const subject = `${this.broker.serviceName}_rpc`;
+    const subject = subjectRpc(this.broker.serviceName);
 
     // Subscribe to rpc
     this.broker.transporter.subscribe(subject, (packet) => {
@@ -196,6 +191,11 @@ export class Server {
           `command '${name}' handler is missing`
         );
       await handler(ctx);
+    }
+
+    // Signal
+    else if (type === 'signal') {
+      //
     }
 
     // Unknown request
@@ -294,6 +294,11 @@ export class Server {
         ...middlewares,
         config.handler,
       ]);
+    }
+
+    // Add signal handler
+    else if (config.type === 'signal') {
+      //
     }
 
     // Unknown

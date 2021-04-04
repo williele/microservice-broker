@@ -1,5 +1,6 @@
 import { Broker } from '../broker';
 import { ExtractClientMethod, ExtractCommandMessage } from '../interface';
+import { ServiceSchema } from '../server';
 import { Client } from './client';
 import { CommandHandler, Packet } from './interface';
 
@@ -15,12 +16,12 @@ export class ExtractClient {
    * @param serviceName
    * @param schema Default schema, if given client won't fetch schema from target service
    */
-  constructor(broker: Broker, serviceName: string) {
-    this.client = broker.createClient(serviceName);
+  constructor(broker: Broker, schema: ServiceSchema) {
+    this.client = broker.createClient(schema);
   }
 
-  schema() {
-    return this.client.fetchSchema();
+  getSchema() {
+    return this.client.getSchema();
   }
 
   protected createMethod<I = unknown, O = unknown>(

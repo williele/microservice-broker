@@ -21,10 +21,12 @@ import {
 } from './interface';
 import { composeInterceptor } from './compose';
 import { request, serializeRequest } from './request';
+import { subjectRpc } from '../utils/subject-name';
 
 export class Client {
   private schema: ServiceSchema;
-  private rpcSubject = `${this.peerService}_rpc`;
+  public readonly peerService: string;
+  private rpcSubject: string;
 
   private serializer: BaseSerializer;
   private transporter: BaseTransporter;
@@ -41,7 +43,7 @@ export class Client {
   constructor(
     private readonly broker: Broker,
     config: BrokerConfig,
-    private readonly peerService: string
+    service: string | ServiceSchema
   ) {
     this.storage = new RecordStorage([]);
     this.serializer = createSerializer(config.serializer, this.storage);
@@ -49,6 +51,15 @@ export class Client {
     this.interceptors.push(...(config.client?.interceptors || []));
 
     this.transporter = this.broker.transporter;
+
+    if (typeof service === 'string') {
+      this.peerService = service;
+      this.rpcSubject = subjectRpc(this.peerService);
+    } else {
+      this.peerService = service.serviceName;
+      this.rpcSubject = subjectRpc(this.peerService);
+      this.setSchema(service);
+    }
   }
 
   /**
@@ -68,6 +79,9 @@ export class Client {
   }
 
   private setSchema(schema: ServiceSchema) {
+    if (!schema) {
+      throw new BadRequestError(`Client not found service schema`);
+    }
     this.schema = schema;
 
     // Parsing serializer
@@ -76,26 +90,13 @@ export class Client {
     });
   }
 
-  async fetchSchema(header: Packet['header'] = {}): Promise<ServiceSchema> {
+  async getSchema(): Promise<ServiceSchema> {
     if (this.schema) return this.schema;
-
-    // Start broker first
-    await this.broker.start();
-
-    const compose = composeInterceptor([
-      request(this.rpcSubject, this.transporter),
-    ]);
-
-    // Inject header
-    this.injectHeader('metadata', 'schema', header);
-
-    const result = await compose({ body: Buffer.from([]), header });
-    if (!(result.body instanceof Buffer)) {
-      throw new BadRequestError(`Fetch schema response is not a buffer`);
+    else {
+      const schema = await this.broker.getDependencySchema(this.peerService);
+      this.setSchema(schema);
+      return schema;
     }
-    this.setSchema(JSON.parse(result.body.toString()));
-
-    return this.schema;
   }
 
   /**
@@ -104,12 +105,9 @@ export class Client {
    * @param header
    * @returns
    */
-  private async composeMethod(
-    method: string,
-    header: Packet['header']
-  ): Promise<InterceptorCompose> {
+  private async composeMethod(method: string): Promise<InterceptorCompose> {
     if (this.methodComposes[method]) return this.methodComposes[method];
-    if (!this.schema) await this.fetchSchema(header);
+    if (!this.schema) await this.getSchema();
 
     const info = this.schema.methods[method];
     if (!info)
@@ -126,6 +124,17 @@ export class Client {
     return compose;
   }
 
+  private composeCommand(command: string): InterceptorCompose {
+    if (this.commandComposes[command]) return this.commandComposes[command];
+
+    const compose = composeInterceptor([
+      ...this.interceptors,
+      request(this.rpcSubject, this.transporter),
+    ]);
+    this.commandComposes[command] = compose;
+    return compose;
+  }
+
   /**
    * Create a command packet
    * which can store into outbox for later requestRaw
@@ -136,13 +145,12 @@ export class Client {
     body,
     header: Packet['header'] = {}
   ): Promise<CommandMessage> {
-    if (!this.schema) await this.fetchSchema();
-
     const info = this.schema.commands[command];
     if (!info)
       throw new BadRequestError(
         `Command '${command}' not exists in '${this.peerService}'`
       );
+    if (!this.schema) await this.broker.getDependencySchema(this.peerService);
 
     const buffer = this.serializer.encodeFor(
       'command_request',
@@ -169,21 +177,6 @@ export class Client {
     this.commandHandlers[command] = handler;
   }
 
-  private async composeCommand(
-    command: string,
-    header: Packet['header'] = {}
-  ): Promise<InterceptorCompose> {
-    if (this.commandComposes[command]) return this.commandComposes[command];
-    if (!this.schema) await this.fetchSchema(header);
-
-    const compose = composeInterceptor([
-      ...this.interceptors,
-      request(this.rpcSubject, this.transporter),
-    ]);
-    this.commandComposes[command] = compose;
-    return compose;
-  }
-
   /**
    * Call a method of current service
    * @param method
@@ -195,7 +188,7 @@ export class Client {
     body: unknown,
     header: Packet['header'] = {}
   ): Promise<Packet<O>> {
-    const compose = await this.composeMethod(method, header);
+    const compose = await this.composeMethod(method);
     // Inject header
     this.injectHeader('method', method, header);
 
@@ -205,9 +198,7 @@ export class Client {
 
   /**
    * Send command message to peer service
-   * @param command
-   * @param body
-   * @param header
+   * @param message
    */
   async command(message: CommandMessage): Promise<void> {
     const { service, command, body, header } = message;
@@ -216,7 +207,7 @@ export class Client {
         `Client '${this.peerService}' cannot send command to '${service}'`
       );
 
-    const compose = await this.composeCommand(command, header);
+    const compose = await this.composeCommand(command);
     // Inject header
     this.injectHeader('command', command, header);
     const handler = this.commandHandlers[message.command];

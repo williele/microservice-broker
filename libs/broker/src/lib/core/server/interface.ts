@@ -14,6 +14,12 @@ export interface CommandInfo {
   deprecated?: boolean;
 }
 
+export interface SignalInfo {
+  request: string;
+  description?: string;
+  deprecated?: boolean;
+}
+
 export type HandleType = 'method' | 'command' | 'saga';
 
 export interface ServiceSchema {
@@ -59,4 +65,13 @@ export interface AddCommandConfig extends HandlerBase {
   request: RecordDefinition;
 }
 
-export type AddHandlerConfig = AddMethodConfig | AddCommandConfig;
+export interface AddSignalConfig extends HandlerBase {
+  type: 'signal';
+  service: string;
+  request: RecordDefinition;
+}
+
+export type AddHandlerConfig =
+  | AddMethodConfig
+  | AddCommandConfig
+  | AddSignalConfig;

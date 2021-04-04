@@ -7,6 +7,7 @@ import {
   HandleType,
   AddMethodConfig,
   AddCommandConfig,
+  AddSignalConfig,
 } from './interface';
 import { sendResponse } from './utils';
 
@@ -75,6 +76,24 @@ export function commandHandler(
   return {
     request,
     middlewares: [middleware],
+  };
+}
+
+export function signalHandler(
+  storage: RecordStorage,
+  config: AddSignalConfig
+): {
+  request: string;
+  middlewares: Middleware[];
+} {
+  // Add request
+  const request = storage.add(config.request);
+
+  // Decode request and send
+
+  return {
+    request,
+    middlewares: [],
   };
 }
 

@@ -82,7 +82,7 @@ export class OutboxProcessor {
 
     console.log(message);
 
-    await this.broker.command(message);
+    // await this.broker.command(message);
 
     done();
   }
