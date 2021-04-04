@@ -22,6 +22,7 @@ import {
 import { composeInterceptor } from './compose';
 import { request, serializeRequest } from './request';
 import { subjectRpc } from '../utils/subject-name';
+import { Dependencies } from '../dependencies';
 
 export class Client {
   private schema: ServiceSchema;
@@ -43,7 +44,8 @@ export class Client {
   constructor(
     private readonly broker: Broker,
     config: BrokerConfig,
-    service: string | ServiceSchema
+    service: string | ServiceSchema,
+    private readonly dependencies: Dependencies
   ) {
     this.storage = new RecordStorage([]);
     this.serializer = createSerializer(config.serializer, this.storage);
@@ -52,14 +54,14 @@ export class Client {
 
     this.transporter = this.broker.transporter;
 
+    this.dependencies.addDependency(service);
     if (typeof service === 'string') {
       this.peerService = service;
-      this.rpcSubject = subjectRpc(this.peerService);
     } else {
       this.peerService = service.serviceName;
-      this.rpcSubject = subjectRpc(this.peerService);
-      this.setSchema(service);
     }
+
+    this.rpcSubject = subjectRpc(this.peerService);
   }
 
   /**
@@ -93,7 +95,7 @@ export class Client {
   async getSchema(): Promise<ServiceSchema> {
     if (this.schema) return this.schema;
     else {
-      const schema = await this.broker.getDependencySchema(this.peerService);
+      const schema = await this.dependencies.getSchema(this.peerService);
       this.setSchema(schema);
       return schema;
     }
@@ -150,7 +152,7 @@ export class Client {
       throw new BadRequestError(
         `Command '${command}' not exists in '${this.peerService}'`
       );
-    if (!this.schema) await this.broker.getDependencySchema(this.peerService);
+    if (!this.schema) await this.dependencies.getSchema(this.peerService);
 
     const buffer = this.serializer.encodeFor(
       'command_request',

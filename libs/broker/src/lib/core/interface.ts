@@ -23,6 +23,10 @@ export interface BrokerConfig {
      */
     records?: RecordDefinition[];
     /**
+     * List of signal this broker may generate
+     */
+    signals?: Record<string, RecordDefinition>;
+    /**
      * If true, all method is enable tracing by default
      */
     tracing?: boolean;

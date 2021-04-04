@@ -88,7 +88,6 @@ async function main() {
   // });
 
   await serviceBroker.start();
-  clientBroker.addDependency(serviceBroker.getSchema());
 
   const client = clientBroker.createClient('bar');
   console.log(await client.call('hello', { name: 'williele' }));

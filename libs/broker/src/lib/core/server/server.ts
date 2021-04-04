@@ -12,7 +12,7 @@ import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { promises } from 'fs';
 import { compose } from './compose';
-import { commandHandler, methodHandler } from './handlers';
+import { commandHandler, methodHandler, signalHandler } from './handlers';
 import { BaseSerializer } from '../serializer';
 import { createSerializer } from '../serializer/create-serializer';
 import {
@@ -25,6 +25,7 @@ import { dirname, resolve } from 'path';
 import { normalizeMiddlewares, sendError, sendResponse } from './utils';
 import { verifyName } from '../utils/verify-name';
 import { subjectRpc } from '../utils/subject-name';
+import { Dependencies } from '../dependencies';
 
 export class Server {
   public readonly serializer: BaseSerializer;
@@ -37,7 +38,10 @@ export class Server {
   private _commands: Record<string, CommandInfo> = {};
   private _commandHandlers: Record<string, MiddlewareCompose> = {};
 
-  // private _signals: Record
+  private _signalHandlers: Record<
+    string,
+    Record<string, MiddlewareCompose>
+  > = {};
 
   // Cached
   private _schema: ServiceSchema;
@@ -51,7 +55,8 @@ export class Server {
 
   constructor(
     public readonly broker: Broker,
-    public readonly config: BrokerConfig
+    public readonly config: BrokerConfig,
+    private readonly dependencies: Dependencies
   ) {
     this.storage = new RecordStorage(config.server?.records || []);
     this.serializer = createSerializer(config.serializer, this.storage);
@@ -237,6 +242,7 @@ export class Server {
       records: this.storage.records,
       methods: this._methods,
       commands: this._commands,
+      signals: {},
     };
     return this._schema;
   }
@@ -298,7 +304,19 @@ export class Server {
 
     // Add signal handler
     else if (config.type === 'signal') {
-      //
+      if (this._signalHandlers[config.service]?.[config.name]) {
+        throw new ConfigError(`Signal handler for '${name}' already define`);
+      }
+
+      const handler = signalHandler(this.dependencies, config);
+      // Handler
+      if (!this._signalHandlers[config.service])
+        this._signalHandlers[config.service] = {};
+      this._signalHandlers[config.service][config.name] = compose([
+        ...handler.middlewares,
+        ...middlewares,
+        config.handler,
+      ]);
     }
 
     // Unknown

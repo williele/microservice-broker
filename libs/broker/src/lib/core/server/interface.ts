@@ -16,8 +16,6 @@ export interface CommandInfo {
 
 export interface SignalInfo {
   request: string;
-  description?: string;
-  deprecated?: boolean;
 }
 
 export type HandleType = 'method' | 'command' | 'saga';
@@ -29,6 +27,7 @@ export interface ServiceSchema {
   records: Record<string, NamedRecordType>;
   methods: Record<string, MethodInfo>;
   commands: Record<string, CommandInfo>;
+  signals: Record<string, SignalInfo>;
 }
 
 export interface RequestHandler<I = unknown, O = unknown> {

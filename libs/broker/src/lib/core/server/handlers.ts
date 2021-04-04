@@ -1,6 +1,9 @@
 import { Tags } from 'opentracing';
+import { Dependencies } from '../dependencies';
+import { ConfigError } from '../error';
 import { spanLogError } from '../error/span';
 import { RecordStorage } from '../schema';
+import { BaseSerializer } from '../serializer';
 import { Context } from './context';
 import {
   Middleware,
@@ -8,6 +11,7 @@ import {
   AddMethodConfig,
   AddCommandConfig,
   AddSignalConfig,
+  ServiceSchema,
 } from './interface';
 import { sendResponse } from './utils';
 
@@ -80,20 +84,39 @@ export function commandHandler(
 }
 
 export function signalHandler(
-  storage: RecordStorage,
+  dependencies: Dependencies,
   config: AddSignalConfig
 ): {
-  request: string;
   middlewares: Middleware[];
 } {
-  // Add request
-  const request = storage.add(config.request);
+  // Caches
+  let schema: ServiceSchema;
+  let serializer: BaseSerializer;
 
-  // Decode request and send
+  // Fetch service schema and decode signal request
+  const middleware = async (ctx: Context, next) => {
+    if (!schema) schema = await dependencies.getSchema(config.service);
+    if (!serializer)
+      serializer = await dependencies.getSerializer(config.service);
+
+    const signal = schema.signals[config.name];
+    // Service schema don't have signal define
+    if (!signal) {
+      throw new ConfigError(
+        `Unknown signal '${config.name}' from service '${config.service}'`
+      );
+    }
+
+    // Decode
+    ctx.body = serializer.decodeFor('request', signal.request, ctx.packet.body);
+    await next();
+    // Empty body
+    ctx.res.body = Buffer.from([]);
+    await sendResponse(ctx);
+  };
 
   return {
-    request,
-    middlewares: [],
+    middlewares: [middleware],
   };
 }
 
