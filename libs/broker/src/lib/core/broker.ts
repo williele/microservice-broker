@@ -1,14 +1,15 @@
 import { Tracer } from 'opentracing';
-import { BrokerConfig, ID, TransportPacket } from './interface';
+import { BrokerConfig, ID, MessageCallback, MessagePacket } from './interface';
 import { BaseTransporter } from './transporter';
-import { Client, CommandMessage, Packet } from './client';
+import { Client } from './client';
 import { createTransporter } from './transporter/create-transporter';
 import { Server } from './server/server';
-import { ConfigError } from './error';
+import { BadRequestError, ConfigError } from './error';
 import { OutboxProcessor } from './outbox/procesor';
 import { AddHandlerConfig, ServiceSchema } from './server';
 import { BrokerClient } from './client/broker-client';
 import { Dependencies } from './dependencies';
+import { subjectRpc } from './utils/subject-name';
 
 export class Broker {
   readonly serviceName: string;
@@ -110,64 +111,55 @@ export class Broker {
   }
 
   /**
-   * Call method
-   * @param schema service schema for peer service
-   * @param method
-   * @param input
-   * @param header
+   * Create a message packet for later send
+   * @param destination send to service
+   * @param type request type
+   * @param name request name
+   * @param body
    * @returns
    */
-  method(
-    schema: string,
-    method: string,
-    input: unknown,
-    header: Packet['header'] = {}
-  ) {
-    return this.createClient(schema).call(method, input, header);
-  }
-
-  /**
-   * Send a command message
-   * @param schema service schema for peer service
-   * @param message command message
-   * @returns
-   */
-  command(schema: string, message: CommandMessage) {
-    return this.createClient(schema).command(message);
-  }
-
-  /**
-   * Create a transport packet from this service
-   */
-  createPacket(
-    destinations: string | string[],
-    type: string,
+  createMessage(
+    destination: string,
+    type: 'command' | 'signal',
     name: string,
     body: Buffer
-  ): TransportPacket {
+  ): MessagePacket {
     return {
-      header: {
-        // This service
-        service: this.serviceName,
-        // Request informations
-        destinations: Array.isArray(destinations)
-          ? destinations.join(',')
-          : destinations,
-        type,
-        name,
-      },
-      body,
+      destination,
+      request: `${type}:${name}`,
+      header: {},
+      payload: body,
     };
   }
 
   /**
-   * Encode a signal record
-   * @param name
+   * Create signal packet
+   * @param destination desitination services
+   * @param name signal name
    * @param val
    * @returns
    */
-  encodeSignal<R = unknown>(name: string, val: R) {
-    return this.server.encodeSignal(name, val);
+  createSignal<R = unknown>(
+    destination: string,
+    name: string,
+    val: R
+  ): MessagePacket {
+    return this.createMessage(
+      destination,
+      'signal',
+      name,
+      this.server.encodeSignal<R>(name, val)
+    );
+  }
+
+  /**
+   * Add signal callback handler
+   * @param signal
+   * @param handler
+   * @returns
+   */
+  onSignal<R = unknown>(signal: string, handler: MessageCallback<R>) {
+    return this.server.onSignal(signal, handler);
   }
 
   /**
@@ -176,5 +168,16 @@ export class Broker {
    */
   async emitOutbox(message: ID | ID[]) {
     if (this.outboxProcessor) return this.outboxProcessor.add(message);
+  }
+
+  async emit(message: MessagePacket) {
+    const [type] = message.request.split(':');
+    if (type === 'command') {
+      return this.createClient(message.destination).command(message);
+    } else if (type === 'signal') {
+      return this.server.sendSignal(message);
+    } else {
+      throw new BadRequestError(`Unknown message request type`);
+    }
   }
 }

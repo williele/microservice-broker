@@ -1,12 +1,12 @@
 import { ID } from '@williele/broker';
-import { CommandMessage } from '../client';
+import { MessagePacket } from '../interface';
 
 export abstract class Outbox {
   /**
    * Get a command message by id
    * @param id
    */
-  abstract get(id: ID): Promise<CommandMessage>;
+  abstract get(id: ID): Promise<MessagePacket>;
   /**
    * Remove a command message by id
    * @param id

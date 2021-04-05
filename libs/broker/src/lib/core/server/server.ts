@@ -8,7 +8,12 @@ import {
   AddHandlerConfig,
   SignalInfo,
 } from './interface';
-import { BrokerConfig, TransportPacket } from '../interface';
+import {
+  BrokerConfig,
+  MessageCallback,
+  MessagePacket,
+  TransportPacket,
+} from '../interface';
 import { Context, defaultContext, defaultResponse, Response } from './context';
 import { FORMAT_HTTP_HEADERS } from 'opentracing';
 import { promises } from 'fs';
@@ -27,6 +32,7 @@ import { normalizeMiddlewares, sendError, sendResponse } from './utils';
 import { verifyName } from '../utils/verify-name';
 import { subjectRpc } from '../utils/subject-name';
 import { Dependencies } from '../dependencies';
+import { sendMessage } from '../utils/send-message';
 
 export class Server {
   public readonly serializer: BaseSerializer;
@@ -43,6 +49,7 @@ export class Server {
    * Signal belong to this server
    */
   private _signals: Record<string, SignalInfo> = {};
+  private _signalCallbacks: Record<string, MessageCallback> = {};
   private _signalHandlers: Record<
     string,
     Record<string, MiddlewareCompose>
@@ -180,6 +187,26 @@ export class Server {
   }
 
   /**
+   * Create context for handling
+   * Each request has separate context
+   * Using Object.create for context creation peformance
+   * @param packet
+   * @returns
+   */
+  private createContext(packet: TransportPacket): Context {
+    const ctx: Context = Object.create(this._context);
+    ctx.packet = packet;
+    ctx.extra = {};
+    ctx.res = Object.create(this._response);
+    ctx.res.header = Object.create(this._response.header);
+
+    // Initialize request span
+    ctx.span = this.broker.tracer.extract(FORMAT_HTTP_HEADERS, packet.header);
+
+    return ctx;
+  }
+
+  /**
    * Handle rpc request
    * @param ctx
    */
@@ -256,23 +283,26 @@ export class Server {
   }
 
   /**
-   * Create context for handling
-   * Each request has separate context
-   * Using Object.create for context creation peformance
-   * @param packet
-   * @returns
+   * Send a signal message
+   * @param message
    */
-  private createContext(packet: TransportPacket): Context {
-    const ctx: Context = Object.create(this._context);
-    ctx.packet = packet;
-    ctx.extra = {};
-    ctx.res = Object.create(this._response);
-    ctx.res.header = Object.create(this._response.header);
+  async sendSignal(message: MessagePacket) {
+    const [, name] = message.request.split(':');
 
-    // Initialize request span
-    ctx.span = this.broker.tracer.extract(FORMAT_HTTP_HEADERS, packet.header);
+    if (!this._signals[name]) {
+      throw new BadRequestError(`Unknown signal name '${name}'`);
+    }
 
-    return ctx;
+    return sendMessage(
+      {
+        service: this.broker.serviceName,
+        serializer: this.serializer,
+        transporter: this.broker.transporter,
+      },
+      { type: 'signal', name },
+      { packet: message, request: this._signals[name].request },
+      this._signalCallbacks[name]
+    );
   }
 
   /**
@@ -371,5 +401,19 @@ export class Server {
     else {
       throw new ConfigError(`Unknown handler type`);
     }
+  }
+
+  /**
+   * Add signal message callback handler
+   * @param signal
+   * @param callback
+   */
+  onSignal<P = unknown>(signal: string, callback: MessageCallback<P>) {
+    if (this._signalCallbacks[signal]) {
+      throw new ConfigError(
+        `Signal '${signal}' callback handler already defined`
+      );
+    }
+    this._signalCallbacks[signal] = callback;
   }
 }

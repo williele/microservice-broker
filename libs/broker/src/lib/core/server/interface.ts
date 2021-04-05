@@ -47,6 +47,7 @@ export interface MiddlewareCompose {
 }
 
 // Adding handler
+
 interface HandlerBase {
   name: string;
   description?: string;
@@ -69,7 +70,6 @@ export interface AddCommandConfig extends HandlerBase {
 export interface AddSignalConfig extends HandlerBase {
   type: 'signal';
   service: string;
-  request: RecordDefinition;
 }
 
 export type AddHandlerConfig =

@@ -1,4 +1,10 @@
-import { Broker, Context, Field, Record } from '@williele/broker';
+import {
+  Broker,
+  Context,
+  Field,
+  Record,
+  ValidateError,
+} from '@williele/broker';
 
 @Record()
 class InitCommand {
@@ -41,15 +47,6 @@ const serviceBroker = new Broker({
 });
 
 serviceBroker.add({
-  type: 'command',
-  name: 'init',
-  request: InitCommand,
-  async handler(ctx: Context<InitCommand>) {
-    console.log(ctx.body);
-  },
-});
-
-serviceBroker.add({
   type: 'method',
   name: 'hello',
   request: HelloInput,
@@ -59,6 +56,23 @@ serviceBroker.add({
       message: `Hello ${ctx.body.name}`,
     });
   },
+});
+
+serviceBroker.add({
+  type: 'command',
+  name: 'init',
+  request: InitCommand,
+  async handler(ctx: Context<InitCommand>) {
+    console.log('COMMAND RECEIVE:', ctx.body);
+    throw ValidateError.fields({ username: 'unique' });
+  },
+});
+
+serviceBroker.onSignal<InitSignal>('init', ({ payload }, error) => {
+  if (error) {
+    console.log('SIGNAL ERROR:', error.message);
+  }
+  console.log('SIGNAL CALLBACK:', payload);
 });
 
 const clientBroker = new Broker({
@@ -71,19 +85,41 @@ const clientBroker = new Broker({
     },
   },
 });
+clientBroker.add({
+  type: 'signal',
+  service: 'bar',
+  name: 'init',
+  async handler(ctx: Context<InitSignal>) {
+    console.log('SIGNAL RECEIVE:', ctx.body);
+  },
+});
 
 async function main() {
   await serviceBroker.start();
-
-  const signal = serviceBroker.encodeSignal<InitSignal>('init', {
-    message: 'awesome',
-  });
-  console.log(signal);
-  const packet = serviceBroker.createPacket('baz', 'signal', 'init', signal);
-  console.log(packet);
+  await clientBroker.start();
 
   const client = clientBroker.createClient('bar');
-  console.log(await client.call('hello', { name: 'williele' }));
+  client.onCommand<InitCommand>('init', ({ payload }, error) => {
+    if (error) {
+      console.log('COMMAND ERROR:', error.message);
+    }
+    console.log('COMMAND CALLBACK:', payload);
+  });
+
+  const commandMsg = await client.createCommand<InitCommand>('init', {
+    name: 'williele',
+  });
+  console.log('COMMAND:', commandMsg);
+  // Client emit command to Service
+  await clientBroker.emit(commandMsg);
+
+  const signalMsg = await serviceBroker.createSignal<InitSignal>(
+    'baz',
+    'init',
+    { message: 'Hello there' }
+  );
+  console.log('SIGNAL:', signalMsg);
+  await serviceBroker.emit(signalMsg);
 }
 
 main().catch((error) => console.error(error));

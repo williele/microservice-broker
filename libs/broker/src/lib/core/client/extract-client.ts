@@ -1,8 +1,8 @@
 import { Broker } from '../broker';
-import { ExtractClientMethod, ExtractCommandMessage } from '../interface';
+import { ExtractClientMethod } from '../interface';
 import { ServiceSchema } from '../server';
 import { Client } from './client';
-import { CommandHandler, Packet } from './interface';
+import { Packet } from './interface';
 
 /**
  * Create a client model for another service
@@ -34,19 +34,19 @@ export class ExtractClient {
         .then((r) => r.body);
   }
 
-  protected createCommandMessage<I = unknown>(
-    command: string,
-    defaultHeader: Packet['header'] = {}
-  ): ExtractCommandMessage<I> {
-    return (input: I, header: Packet['header'] = {}) =>
-      this.client.commandMessage(command, input, {
-        ...defaultHeader,
-        ...header,
-      });
-  }
+  // protected createCommandMessage<I = unknown>(
+  //   command: string,
+  //   defaultHeader: Packet['header'] = {}
+  // ): ExtractCommandMessage<I> {
+  //   return (input: I, header: Packet['header'] = {}) =>
+  //     this.client.commandMessage(command, input, {
+  //       ...defaultHeader,
+  //       ...header,
+  //     });
+  // }
 
-  protected createCommandHandler<T = unknown>(command: string) {
-    return (handler: CommandHandler<T>) =>
-      this.client.commandHandler<T>(command, handler);
-  }
+  // protected createCommandHandler<T = unknown>(command: string) {
+  //   return (handler: CommandHandler<T>) =>
+  //     this.client.commandHandler<T>(command, handler);
+  // }
 }

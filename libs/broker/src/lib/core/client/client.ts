@@ -2,25 +2,16 @@ import { Broker } from '../broker';
 import { ServiceSchema } from '../server/interface';
 import { BaseSerializer } from '../serializer';
 import { BaseTransporter } from '../transporter';
-import {
-  BadRequestError,
-  BrokerError,
-  clientCauseErrors,
-  ConfigError,
-  DuplicateError,
-} from '../error';
-import { BrokerConfig } from '../interface';
-import {
-  CommandHandler,
-  CommandMessage,
-  Interceptor,
-  InterceptorCompose,
-  Packet,
-} from './interface';
+import { BadRequestError, ConfigError } from '../error';
+import { BrokerConfig, MessageCallback, MessagePacket } from '../interface';
+import { Interceptor, InterceptorCompose, Packet } from './interface';
 import { composeInterceptor } from './compose';
 import { request, serializeRequest } from './request';
 import { subjectRpc } from '../utils/subject-name';
 import { Dependencies } from '../dependencies';
+import { injectHeader } from '../utils/header';
+import { EventEmitter } from 'events';
+import { sendMessage } from '../utils/send-message';
 
 export class Client {
   private schema: ServiceSchema;
@@ -32,11 +23,15 @@ export class Client {
 
   private interceptors: Interceptor[] = [];
 
+  // event
+  private callbackEvent = new EventEmitter();
+
   // cache
   private methodComposes: Record<string, InterceptorCompose> = {};
   private commandComposes: Record<string, InterceptorCompose> = {};
 
-  private commandHandlers: Record<string, CommandHandler> = {};
+  // Command handlers
+  private commandCallback: Record<string, MessageCallback> = {};
 
   constructor(
     private readonly broker: Broker,
@@ -55,22 +50,6 @@ export class Client {
     }
 
     this.rpcSubject = subjectRpc(this.peerService);
-  }
-
-  /**
-   * Inject conventional header for sending request
-   * @param type
-   * @param name
-   * @param header
-   */
-  private injectHeader(
-    type: string,
-    name: string,
-    header: Packet['header'] = {}
-  ) {
-    header['service'] = this.broker.serviceName;
-    header['type'] = type;
-    header['name'] = name;
   }
 
   async getSchema(): Promise<ServiceSchema> {
@@ -107,57 +86,42 @@ export class Client {
     return compose;
   }
 
-  private composeCommand(command: string): InterceptorCompose {
-    if (this.commandComposes[command]) return this.commandComposes[command];
-
-    const compose = composeInterceptor([
-      ...this.interceptors,
-      request(this.rpcSubject, this.transporter),
-    ]);
-    this.commandComposes[command] = compose;
-    return compose;
-  }
-
   /**
-   * Create a command packet
-   * which can store into outbox for later requestRaw
-   * or send rightaway to command method
+   * Create a command message package
+   * @param name command name
+   * @param val command request
+   * @returns
    */
-  async commandMessage(
-    command: string,
-    body,
-    header: Packet['header'] = {}
-  ): Promise<CommandMessage> {
-    const info = this.schema.commands[command];
+  async createCommand<R = unknown>(
+    name: string,
+    val: R
+  ): Promise<MessagePacket> {
+    if (!this.schema) await this.getSchema();
+    const info = this.schema.commands[name];
     if (!info)
       throw new BadRequestError(
-        `Command '${command}' not exists in '${this.peerService}'`
+        `Command '${name}' not exists in '${this.peerService}'`
       );
-    if (!this.schema) await this.dependencies.getSchema(this.peerService);
 
-    const buffer = this.serializer.encodeFor(
-      'command_request',
-      info.request,
-      body
+    return this.broker.createMessage(
+      this.peerService,
+      'command',
+      name,
+      this.serializer.encodeFor('command_request', info.request, val)
     );
-
-    return {
-      service: this.peerService,
-      command,
-      body: buffer,
-      header,
-    };
   }
 
   /**
-   * Add a command handler, receive message and en error if error as arguments
+   * Add command callback handlers
    * @param command
    * @param handler
    */
-  commandHandler<T = unknown>(command: string, handler: CommandHandler<T>) {
-    if (this.commandHandlers[command])
-      throw new ConfigError(`Command handler '${command}' already exists`);
-    this.commandHandlers[command] = handler;
+  onCommand<T = unknown>(command: string, handler: MessageCallback<T>) {
+    if (this.commandCallback[command])
+      throw new ConfigError(
+        `Command callback '${command}' of '${this.peerService}' already defined`
+      );
+    else this.commandCallback[command] = handler;
   }
 
   /**
@@ -173,7 +137,7 @@ export class Client {
   ): Promise<Packet<O>> {
     const compose = await this.composeMethod(method);
     // Inject header
-    this.injectHeader('method', method, header);
+    injectHeader(this.broker.serviceName, 'method', method, header);
 
     const response = await compose({ body, header });
     return response as Packet<O>;
@@ -183,42 +147,26 @@ export class Client {
    * Send command message to peer service
    * @param message
    */
-  async command(message: CommandMessage): Promise<void> {
-    const { service, command, body, header } = message;
-    if (this.peerService !== service)
+  async command(message: MessagePacket): Promise<void> {
+    const [, name] = message.request.split(':');
+    if (!this.schema.commands[name]) {
       throw new BadRequestError(
-        `Client '${this.peerService}' cannot send command to '${service}'`
-      );
-
-    const compose = await this.composeCommand(command);
-    // Inject header
-    this.injectHeader('command', command, header);
-    const handler = this.commandHandlers[message.command];
-
-    // Decode the header
-    let request;
-    if (handler) {
-      request = this.serializer.decode(
-        this.schema.commands[command].request,
-        body
+        `Command not found '${name}' in '${this.peerService}'`
       );
     }
 
-    try {
-      await compose({ body, header });
-      if (handler) await handler(request);
-    } catch (err) {
-      // Ignore if error is duplicate
-      if (err instanceof DuplicateError) return;
-      else if (
-        err instanceof BrokerError &&
-        clientCauseErrors.includes(err.code)
-      ) {
-        if (handler) await handler(request, err);
-        else return;
-      } else {
-        throw err;
-      }
-    }
+    return sendMessage(
+      {
+        service: this.peerService,
+        serializer: this.serializer,
+        transporter: this.transporter,
+      },
+      { type: 'command', name },
+      {
+        packet: message,
+        request: this.schema.commands[name].request,
+      },
+      this.commandCallback[name]
+    );
   }
 }

@@ -2,9 +2,10 @@ import { TransporterConfig } from './transporter';
 import { SerializerConfig } from './serializer';
 import type { Tracer } from 'opentracing';
 import { RecordDefinition } from './schema';
-import { CommandMessage, Interceptor, Packet } from './client/interface';
+import { Interceptor, Packet } from './client/interface';
 import { Outbox } from './outbox';
 import type { QueueOptions } from 'bull';
+import { BrokerError } from './error';
 
 export type ID = string | number;
 
@@ -66,9 +67,21 @@ export interface TransportPacket {
 }
 
 export interface MessagePacket {
-  destinations: string;
+  destination: string;
+  request: string;
   header: Record<string, string>;
-  body: Buffer;
+  payload: Buffer;
+}
+
+export interface CallbackMessage<P = unknown> {
+  destination: string;
+  request: string;
+  header: Record<string, string>;
+  payload: P;
+}
+
+export interface MessageCallback<P = unknown> {
+  (message: CallbackMessage<P>, error?: BrokerError): Promise<void> | void;
 }
 
 export interface ExtractClientMethod<I = unknown, O = unknown> {
@@ -76,5 +89,5 @@ export interface ExtractClientMethod<I = unknown, O = unknown> {
 }
 
 export interface ExtractCommandMessage<I = unknown> {
-  (input: I, header?: Packet['header']): Promise<CommandMessage>;
+  (input: I, header?: Packet['header']): Promise<MessagePacket>;
 }
