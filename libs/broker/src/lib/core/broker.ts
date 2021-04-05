@@ -1,5 +1,5 @@
 import { Tracer } from 'opentracing';
-import { BrokerConfig, ID, MessageCallback, MessagePacket } from './interface';
+import { BrokerConfig, MessageCallback, MessagePacket } from './interface';
 import { BaseTransporter } from './transporter';
 import { Client } from './client';
 import { createTransporter } from './transporter/create-transporter';
@@ -9,7 +9,7 @@ import { OutboxProcessor } from './outbox/procesor';
 import { AddHandlerConfig, ServiceSchema } from './server';
 import { BrokerClient } from './client/broker-client';
 import { Dependencies } from './dependencies';
-import { subjectRpc } from './utils/subject-name';
+import { MessagePackage } from './outbox';
 
 export class Broker {
   readonly serviceName: string;
@@ -166,7 +166,7 @@ export class Broker {
    * Emit to make queue for sending command
    * @param message
    */
-  async emitOutbox(message: ID | ID[]) {
+  async emitOutbox(message: MessagePackage | MessagePackage[]) {
     if (this.outboxProcessor) return this.outboxProcessor.add(message);
   }
 

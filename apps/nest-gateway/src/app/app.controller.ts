@@ -1,7 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { Broker } from '@williele/broker';
-import { InjectBroker } from '@williele/broker-nest';
 import { NestService } from './shared/nest.service';
+import { OutboxService } from './shared/outbox.service';
 
 function toNumber(val: string, def: number) {
   if (isNaN(Number(val))) return def;
@@ -12,7 +12,8 @@ function toNumber(val: string, def: number) {
 export class AppController {
   constructor(
     private readonly nestService: NestService,
-    @InjectBroker() private readonly broker: Broker
+    private readonly broker: Broker,
+    private readonly outbox: OutboxService
   ) {}
 
   _demoCallback = this.nestService.commands.demoCallback(
@@ -39,8 +40,7 @@ export class AppController {
     const packet = await this.nestService.commands.demo({
       name: name || 'someone',
     });
-
-    console.log(packet);
-    await this.broker.emit(packet);
+    const msg = await this.outbox.add(packet);
+    await this.broker.emitOutbox(msg);
   }
 }

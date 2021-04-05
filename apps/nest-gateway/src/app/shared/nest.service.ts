@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Broker, ExtractClient } from '@williele/broker';
-import { InjectBroker } from '@williele/broker-nest';
 
 export interface Demo {
   message: string;
@@ -81,7 +80,7 @@ class NestClient extends ExtractClient {
 
 @Injectable()
 export class NestService extends NestClient {
-  constructor(@InjectBroker() broker: Broker) {
+  constructor(broker: Broker) {
     super(broker);
   }
 }

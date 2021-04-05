@@ -52,6 +52,7 @@ export interface BrokerConfig {
   outbox?: {
     redis: QueueOptions['redis'];
     outbox: Outbox;
+    cron?: string;
   };
   /**
    * If true, broker won't create server

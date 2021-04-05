@@ -1,17 +1,16 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { BrokerModule } from '@williele/broker-nest';
 import { Tracer } from 'opentracing';
 
 import { AppController } from './app.controller';
-import { RequestInterceptor } from './shared/request.interceptor';
+import { OutboxService } from './shared/outbox.service';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
-    SharedModule,
     BrokerModule.forRootAsync({
       import: [SharedModule],
-      factory: (tracer: Tracer, request: RequestInterceptor) => ({
+      factory: (tracer: Tracer, outbox: OutboxService) => ({
         serviceName: 'gateway',
         serializer: { name: 'arvo' },
         transporter: {
@@ -20,13 +19,17 @@ import { SharedModule } from './shared/shared.module';
             servers: ['http://localhost:4444'],
           },
         },
-        client: {
-          interceptors: [request.interceptor],
+        logger: new Logger(BrokerModule.name),
+        outbox: {
+          outbox,
+          redis: 'redis://localhost:6380',
+          cron: '*/2 * * * * *',
         },
         tracer,
       }),
-      inject: [Tracer, RequestInterceptor],
+      inject: [Tracer, OutboxService],
     }),
+    SharedModule,
   ],
   controllers: [AppController],
   providers: [],
