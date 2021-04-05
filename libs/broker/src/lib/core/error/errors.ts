@@ -11,11 +11,11 @@ export enum BrokerErrorCode {
   // Handler
   // Case by server
   INTERNAL = 'InternalError',
+  HANDLER_UNIMPLEMENT = 'HandlerUnimplementError',
   REQUEST_TIME_OUT = 'RequestTimeOut',
   BAD_RESPONSE = 'BadResponse',
 
   // Cause by client
-  HANDLER_UNIMPLEMENT = 'HandlerUnimplementError',
   VALIDATE = 'ValidateError',
   BAD_REQUEST = 'BadRequest',
   NOT_FOUND = 'NotFoundError',
@@ -26,7 +26,6 @@ export enum BrokerErrorCode {
 }
 
 export const clientCauseErrors: string[] = [
-  BrokerErrorCode.HANDLER_UNIMPLEMENT,
   BrokerErrorCode.VALIDATE,
   BrokerErrorCode.BAD_REQUEST,
   BrokerErrorCode.NOT_FOUND,

@@ -1,6 +1,10 @@
 import { Broker } from '../broker';
-import { ExtractClientMethod } from '../interface';
-import { ServiceSchema } from '../server';
+import {
+  ExtractClientMethod,
+  ExtractCommandCallback,
+  ExtractCommandMessage,
+} from './interface';
+import { AddSignalConfig, ServiceSchema } from '../server';
 import { Client } from './client';
 import { Packet } from './interface';
 
@@ -9,6 +13,7 @@ import { Packet } from './interface';
  */
 export class ExtractClient {
   private client: Client;
+  public readonly peerService: string;
 
   /**
    * Create extract client for another service
@@ -16,8 +21,9 @@ export class ExtractClient {
    * @param serviceName
    * @param schema Default schema, if given client won't fetch schema from target service
    */
-  constructor(broker: Broker, schema: ServiceSchema) {
+  constructor(private readonly broker: Broker, schema: ServiceSchema) {
     this.client = broker.createClient(schema);
+    this.peerService = this.client.peerService;
   }
 
   getSchema() {
@@ -34,19 +40,27 @@ export class ExtractClient {
         .then((r) => r.body);
   }
 
-  // protected createCommandMessage<I = unknown>(
-  //   command: string,
-  //   defaultHeader: Packet['header'] = {}
-  // ): ExtractCommandMessage<I> {
-  //   return (input: I, header: Packet['header'] = {}) =>
-  //     this.client.commandMessage(command, input, {
-  //       ...defaultHeader,
-  //       ...header,
-  //     });
-  // }
+  protected createCommandMessage<I = unknown>(
+    command: string
+  ): ExtractCommandMessage<I> {
+    return (input: I) => this.client.createCommand(command, input);
+  }
 
-  // protected createCommandHandler<T = unknown>(command: string) {
-  //   return (handler: CommandHandler<T>) =>
-  //     this.client.commandHandler<T>(command, handler);
-  // }
+  protected createCommandCallback<I = unknown>(
+    command: string
+  ): ExtractCommandCallback<I> {
+    return (handler) => this.client.onCommand(command, handler);
+  }
+
+  protected createSignalHandler<I = unknown>(signal: string) {
+    return (config: Omit<AddSignalConfig<I>, 'type' | 'service' | 'name'>) => {
+      this.broker.add({
+        type: 'signal',
+        service: this.peerService,
+        name: signal,
+        middlewares: config.middlewares,
+        handler: config.handler,
+      });
+    };
+  }
 }

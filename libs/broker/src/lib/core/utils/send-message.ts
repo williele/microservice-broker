@@ -1,14 +1,45 @@
 import {
   BadRequestError,
   BrokerError,
+  BrokerErrorCode,
   clientCauseErrors,
-  DuplicateError,
 } from '../error';
-import { CallbackMessage, MessageCallback, MessagePacket } from '../interface';
+import {
+  CallbackMessage,
+  MessageCallback,
+  MessagePacket,
+  TransportPacket,
+} from '../interface';
 import { BaseSerializer } from '../serializer';
 import { BaseTransporter } from '../transporter';
 import { injectHeader } from './header';
 import { subjectRpc } from './subject-name';
+
+export async function sendRequest(
+  transporter: BaseTransporter,
+  subject: string,
+  packet: TransportPacket
+) {
+  if (!(packet.body instanceof Buffer)) {
+    throw new BadRequestError(`Bad request body. Isn't a Buffer`);
+  }
+
+  const response = await transporter.sendRequest(subject, {
+    body: packet.body,
+    header: packet.header,
+  });
+
+  const errorCode = response.header['error'];
+  if (errorCode) {
+    // Is error
+    throw BrokerError.fromCode(
+      errorCode as BrokerErrorCode,
+      response.header['error.message']
+    );
+  } else {
+    return response;
+  }
+}
 
 export async function sendMessage(
   from: {
@@ -48,15 +79,11 @@ export async function sendMessage(
 
   try {
     const subject = subjectRpc(destination);
-    await from.transporter.sendRequest(subject, { header, body: payload });
+    await sendRequest(from.transporter, subject, { header, body: payload });
     await callbackHandle();
   } catch (err) {
     // Ignore if error is duplicate
-    if (err instanceof DuplicateError) return;
-    else if (
-      err instanceof BrokerError &&
-      clientCauseErrors.includes(err.code)
-    ) {
+    if (err instanceof BrokerError && clientCauseErrors.includes(err.code)) {
       // Callback handling
       await callbackHandle(err);
     } else {

@@ -48,26 +48,27 @@ export interface MiddlewareCompose {
 
 // Adding handler
 
-interface HandlerBase {
+interface HandlerBase<I = unknown> {
   name: string;
   description?: string;
   deprecated?: boolean;
   middlewares?: Middleware | Middleware[];
-  handler: RequestHandler;
+  handler: RequestHandler<I>;
 }
 
-export interface AddMethodConfig extends HandlerBase {
+export interface AddMethodConfig<I = unknown> extends HandlerBase<I> {
   type: 'method';
   request: RecordDefinition;
   response: RecordDefinition;
 }
 
-export interface AddCommandConfig extends HandlerBase {
+export interface AddCommandConfig<I = unknown> extends HandlerBase<I> {
   type: 'command';
   request: RecordDefinition;
 }
 
-export interface AddSignalConfig extends HandlerBase {
+export interface AddSignalConfig<I = unknown>
+  extends Omit<HandlerBase<I>, 'description' | 'deprecated'> {
   type: 'signal';
   service: string;
 }

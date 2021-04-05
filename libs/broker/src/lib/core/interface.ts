@@ -2,19 +2,17 @@ import { TransporterConfig } from './transporter';
 import { SerializerConfig } from './serializer';
 import type { Tracer } from 'opentracing';
 import { RecordDefinition } from './schema';
-import { Interceptor, Packet } from './client/interface';
+import { Interceptor } from './client/interface';
 import { Outbox } from './outbox';
 import type { QueueOptions } from 'bull';
 import { BrokerError } from './error';
 
 export type ID = string | number;
 
-export interface SignalsConfig {
-  [name: string]: {
-    description?: string;
-    deprecated?: boolean;
-    record: RecordDefinition;
-  };
+export interface SignalDefinition {
+  record: RecordDefinition;
+  description?: string;
+  deprecated?: boolean;
 }
 
 export interface BrokerConfig {
@@ -34,7 +32,7 @@ export interface BrokerConfig {
     /**
      * List of signal this broker may generate
      */
-    signals?: SignalsConfig;
+    signals?: SignalDefinition[];
     /**
      * If true, all method is enable tracing by default
      */
@@ -82,12 +80,4 @@ export interface CallbackMessage<P = unknown> {
 
 export interface MessageCallback<P = unknown> {
   (message: CallbackMessage<P>, error?: BrokerError): Promise<void> | void;
-}
-
-export interface ExtractClientMethod<I = unknown, O = unknown> {
-  (input: I, header?: Packet['header']): Promise<O>;
-}
-
-export interface ExtractCommandMessage<I = unknown> {
-  (input: I, header?: Packet['header']): Promise<MessagePacket>;
 }

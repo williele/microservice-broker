@@ -128,17 +128,17 @@ export class Server {
 
     if (this.config.server?.signals) {
       // Verify signals
-      Object.entries(this.config.server.signals).forEach(([name, config]) => {
-        // Verify name
-        if (!verifyName(name)) {
-          throw new ConfigError(`Signal name '${name}' is not valid`);
+      this.config.server.signals.forEach((signal) => {
+        // Cache signal record
+        const record = this.storage.add(signal.record);
+        if (this._signals[record]) {
+          throw new ConfigError(`Signal '${record}' is defined twice`);
         }
 
-        const record = this.storage.add(config.record);
-        this._signals[name] = {
+        this._signals[record] = {
           request: record,
-          deprecated: config.deprecated,
-          description: config.description,
+          deprecated: signal.deprecated,
+          description: signal.description,
         };
       });
     }
