@@ -6,7 +6,6 @@ import { filterEmpty } from './utils/array.utils';
 import { MethodDiscovery } from './discovery/method-discovery.service';
 import { MiddlewareDiscovery } from './discovery/middleware-discovery.service';
 import { CommandDiscovery } from './discovery/command-discovery.service';
-import { InjectBroker } from './decorators';
 
 @Injectable()
 export class BrokerBuilderService implements OnModuleInit {
@@ -16,7 +15,7 @@ export class BrokerBuilderService implements OnModuleInit {
     private readonly middlewareDiscovery: MiddlewareDiscovery,
     private readonly methodDiscovery: MethodDiscovery,
     private readonly commandDiscovery: CommandDiscovery,
-    @InjectBroker() private readonly broker: Broker
+    private readonly broker: Broker
   ) {}
 
   async onModuleInit() {

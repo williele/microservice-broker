@@ -4,14 +4,12 @@ import {
   Provider,
   ModuleMetadata,
   OnModuleInit,
-  Inject,
 } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { InjectorDependency } from '@nestjs/core/injector/injector';
 import { Broker, BrokerConfig } from '@williele/broker';
 import { BrokerBuilderService } from './broker-builder.service';
 import { BrokerServer } from './broker-server';
-import { BROKER_TOKEN } from './constant';
 import { CommandDiscovery } from './discovery/command-discovery.service';
 import { MethodDiscovery } from './discovery/method-discovery.service';
 import { MiddlewareDiscovery } from './discovery/middleware-discovery.service';
@@ -32,7 +30,7 @@ const BROKER_CONFIG_TOKEN = 'BROKER_CONFIG_TOKEN';
 export class BrokerModule implements OnModuleInit {
   static forRoot(config: BrokerConfig): DynamicModule {
     const brokerProvider: Provider = {
-      provide: BROKER_TOKEN,
+      provide: Broker,
       useValue: new Broker(config),
     };
 
@@ -40,7 +38,7 @@ export class BrokerModule implements OnModuleInit {
       global: true,
       module: BrokerModule,
       providers: [brokerProvider],
-      exports: [BROKER_TOKEN],
+      exports: [Broker],
     };
   }
 
@@ -50,7 +48,10 @@ export class BrokerModule implements OnModuleInit {
     import?: ModuleMetadata['imports'];
   }): DynamicModule {
     const brokerProvider: Provider = {
-      provide: BROKER_TOKEN,
+      provide: Broker,
+      useExisting: (config: BrokerConfig) => {
+        return new Broker(config);
+      },
       useFactory: (config: BrokerConfig) => new Broker(config),
       inject: [BROKER_CONFIG_TOKEN],
     };
@@ -60,18 +61,18 @@ export class BrokerModule implements OnModuleInit {
       module: BrokerModule,
       imports: options.import || [],
       providers: [
+        brokerProvider,
         {
           provide: BROKER_CONFIG_TOKEN,
           useFactory: (...args) => options.factory(...args),
           inject: options.inject,
         },
-        brokerProvider,
       ],
-      exports: [BROKER_TOKEN],
+      exports: [Broker],
     };
   }
 
-  constructor(@Inject(BROKER_TOKEN) private readonly broker: Broker) {}
+  constructor(private readonly broker: Broker) {}
 
   async onModuleInit() {
     await this.broker.start();

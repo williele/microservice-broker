@@ -1,13 +1,10 @@
-import { Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Server, CustomTransportStrategy } from '@nestjs/microservices';
 import { Broker } from '@williele/broker';
-import { BROKER_TOKEN } from './constant';
 
+@Injectable()
 export class BrokerServer extends Server implements CustomTransportStrategy {
-  constructor(
-    @Inject(BROKER_TOKEN)
-    private readonly broker: Broker
-  ) {
+  constructor(private readonly broker: Broker) {
     super();
   }
 
