@@ -42,10 +42,11 @@
     }
   },
   "methods": {
-    "main.hello": {
+    "hello": {
       "request": "DemoListInput",
-      "response": "DemoListOutput",
-      "description": null
+      "response": "DemoListOutput"
     }
-  }
+  },
+  "commands": {},
+  "signals": {}
 }

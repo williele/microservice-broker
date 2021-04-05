@@ -12,8 +12,8 @@ export class AppController {
 
   @Get()
   hello(@Query('name') name: string, @Query('length') length: string) {
-    return this.nestClient
-      .main_hello({
+    return this.nestClient.methods
+      .hello({
         name: name || 'Someone',
         length: toNumber(length, 10),
       })

@@ -4,7 +4,6 @@ import {
   Injectable,
   SetMetadata,
 } from '@nestjs/common';
-import { AddMethodConfig } from '@williele/broker';
 import { extendArrayMetadata } from './utils/array.utils';
 import {
   BROKER_TOKEN,
@@ -13,17 +12,13 @@ import {
   SERVICE_TOKEN,
 } from './constant';
 import { MiddlewareConstructor } from './middleware';
+import { MethodConfig } from './interface';
 
-export function Service(name: string) {
-  return applyDecorators(Injectable(), SetMetadata(SERVICE_TOKEN, name));
+export function Service() {
+  return applyDecorators(Injectable(), SetMetadata(SERVICE_TOKEN, true));
 }
 
-export type MethodDecoratorConfig = Omit<
-  AddMethodConfig,
-  'name' | 'handler'
-> & { name?: string };
-
-export function Method(config: MethodDecoratorConfig) {
+export function Method(config: MethodConfig) {
   return SetMetadata(METHOD_TOKEN, config);
 }
 

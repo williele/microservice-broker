@@ -12,12 +12,19 @@ import { Broker, BrokerConfig } from '@williele/broker';
 import { BrokerBuilderService } from './broker-builder.service';
 import { BrokerServer } from './broker-server';
 import { BROKER_TOKEN } from './constant';
+import { MethodDiscovery } from './discovery/method-discovery.service';
+import { MiddlewareDiscovery } from './discovery/middleware-discovery.service';
 
 const BROKER_CONFIG_TOKEN = 'BROKER_CONFIG_TOKEN';
 
 @Module({
   imports: [DiscoveryModule],
-  providers: [BrokerBuilderService, BrokerServer],
+  providers: [
+    BrokerBuilderService,
+    MiddlewareDiscovery,
+    MethodDiscovery,
+    BrokerServer,
+  ],
   exports: [BrokerServer],
 })
 export class BrokerModule implements OnModuleInit {
