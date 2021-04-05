@@ -15,6 +15,15 @@ export class AppController {
     @InjectBroker() private readonly broker: Broker
   ) {}
 
+  _demoCallback = this.nestService.commands.demoCallback(
+    ({ payload }, error) => {
+      if (error) {
+        console.log('COMMAND ERROR:', error.message);
+      }
+      console.log('COMMAND CALLBACK:', payload);
+    }
+  );
+
   @Get()
   hello(@Query('name') name: string, @Query('length') length: string) {
     return this.nestService.methods

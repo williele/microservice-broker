@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ForbiddenError } from '@williele/broker';
 import type { Context } from '@williele/broker';
 import {
   Command,
@@ -38,6 +39,9 @@ export class AppService {
     request: DemoCommand,
   })
   demo(ctx: Context<DemoCommand>) {
-    console.log(ctx.body.name);
+    const name = ctx.body.name;
+    if (name === 'joker') throw new ForbiddenError(`I'm Batman`);
+
+    console.log(name);
   }
 }

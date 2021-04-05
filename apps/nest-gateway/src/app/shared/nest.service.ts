@@ -75,6 +75,7 @@ class NestClient extends ExtractClient {
 
   readonly commands = {
     demo: this.createCommandMessage<DemoCommand>('demo'),
+    demoCallback: this.createCommandCallback<DemoCommand>('demo'),
   };
 }
 
