@@ -1,10 +1,12 @@
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService, Reflector } from '@nestjs/core';
 import { Broker } from '@williele/broker';
-import { BROKER_TOKEN, SERVICE_TOKEN } from './constant';
+import { SERVICE_TOKEN } from './constant';
 import { filterEmpty } from './utils/array.utils';
 import { MethodDiscovery } from './discovery/method-discovery.service';
 import { MiddlewareDiscovery } from './discovery/middleware-discovery.service';
+import { CommandDiscovery } from './discovery/command-discovery.service';
+import { InjectBroker } from './decorators';
 
 @Injectable()
 export class BrokerBuilderService implements OnModuleInit {
@@ -13,7 +15,8 @@ export class BrokerBuilderService implements OnModuleInit {
     private readonly reflector: Reflector,
     private readonly middlewareDiscovery: MiddlewareDiscovery,
     private readonly methodDiscovery: MethodDiscovery,
-    @Inject(BROKER_TOKEN) private readonly broker: Broker
+    private readonly commandDiscovery: CommandDiscovery,
+    @InjectBroker() private readonly broker: Broker
   ) {}
 
   async onModuleInit() {
@@ -38,6 +41,13 @@ export class BrokerBuilderService implements OnModuleInit {
       );
 
       // Scan commands
+      const commands = await this.commandDiscovery.scan(s.provider);
+      commands.forEach((command) => {
+        this.broker.add({
+          ...command,
+          middlewares: middlewares.concat(command.middlewares),
+        });
+      });
     }
   }
 

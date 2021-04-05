@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import type { Context } from '@williele/broker';
 import {
+  Command,
   Method,
   Middleware,
   Service,
   UseMiddleware,
 } from '@williele/broker-nest';
-import { DemoListInput, DemoListOutput } from './model';
+import { DemoCommand, DemoListInput, DemoListOutput } from './model';
 
 @Injectable()
 class DemoMiddleware implements Middleware {
@@ -31,5 +32,12 @@ export class AppService {
         message: `${i}) Hello ${input.name}`,
       })),
     };
+  }
+
+  @Command({
+    request: DemoCommand,
+  })
+  demo(ctx: Context<DemoCommand>) {
+    console.log(ctx.body.name);
   }
 }

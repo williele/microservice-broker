@@ -20,3 +20,9 @@ export class DemoListOutput {
   @ArrayField(1, Demo)
   list: Demo[];
 }
+
+@Record()
+export class DemoCommand {
+  @Field(1, { type: 'string' })
+  name: string;
+}

@@ -15,6 +15,10 @@ export interface DemoListOutput {
   list: Demo[];
 }
 
+export interface DemoCommand {
+  name: string;
+}
+
 class NestClient extends ExtractClient {
   constructor(broker: Broker) {
     super(broker, {
@@ -43,6 +47,12 @@ class NestClient extends ExtractClient {
             },
           },
         },
+        DemoCommand: {
+          name: 'DemoCommand',
+          fields: {
+            name: { order: 1, type: 'string' },
+          },
+        },
       },
       methods: {
         hello: {
@@ -50,13 +60,21 @@ class NestClient extends ExtractClient {
           response: 'DemoListOutput',
         },
       },
-      commands: {},
+      commands: {
+        demo: {
+          request: 'DemoCommand',
+        },
+      },
       signals: {},
     });
   }
 
   readonly methods = {
     hello: this.createMethod<DemoListInput, DemoListOutput>('hello'),
+  };
+
+  readonly commands = {
+    demo: this.createCommandMessage<DemoCommand>('demo'),
   };
 }
 

@@ -39,6 +39,15 @@
           }
         }
       }
+    },
+    "DemoCommand": {
+      "name": "DemoCommand",
+      "fields": {
+        "name": {
+          "order": 1,
+          "type": "string"
+        }
+      }
     }
   },
   "methods": {
@@ -47,6 +56,10 @@
       "response": "DemoListOutput"
     }
   },
-  "commands": {},
+  "commands": {
+    "demo": {
+      "request": "DemoCommand"
+    }
+  },
   "signals": {}
 }

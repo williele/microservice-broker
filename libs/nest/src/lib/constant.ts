@@ -1,4 +1,5 @@
 export const BROKER_TOKEN = 'BROKER_TOKEN';
 export const SERVICE_TOKEN = 'SERVICE_TOKEN';
 export const METHOD_TOKEN = 'METHOD_TOKEN';
+export const COMMAND_TOKEN = 'COMMAND_TOKEN';
 export const MIDDLEWARE_TOKEN = 'MIDDLEWARE_TOKEN';

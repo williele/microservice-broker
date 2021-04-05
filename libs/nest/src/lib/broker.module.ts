@@ -12,6 +12,7 @@ import { Broker, BrokerConfig } from '@williele/broker';
 import { BrokerBuilderService } from './broker-builder.service';
 import { BrokerServer } from './broker-server';
 import { BROKER_TOKEN } from './constant';
+import { CommandDiscovery } from './discovery/command-discovery.service';
 import { MethodDiscovery } from './discovery/method-discovery.service';
 import { MiddlewareDiscovery } from './discovery/middleware-discovery.service';
 
@@ -23,16 +24,16 @@ const BROKER_CONFIG_TOKEN = 'BROKER_CONFIG_TOKEN';
     BrokerBuilderService,
     MiddlewareDiscovery,
     MethodDiscovery,
+    CommandDiscovery,
     BrokerServer,
   ],
   exports: [BrokerServer],
 })
 export class BrokerModule implements OnModuleInit {
   static forRoot(config: BrokerConfig): DynamicModule {
-    const broker = new Broker(config);
     const brokerProvider: Provider = {
       provide: BROKER_TOKEN,
-      useValue: broker,
+      useValue: new Broker(config),
     };
 
     return {
