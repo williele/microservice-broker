@@ -1,5 +1,5 @@
 import { Tracer } from 'opentracing';
-import { BrokerConfig, ID } from './interface';
+import { BrokerConfig, ID, TransportPacket } from './interface';
 import { BaseTransporter } from './transporter';
 import { Client, CommandMessage, Packet } from './client';
 import { createTransporter } from './transporter/create-transporter';
@@ -134,6 +134,30 @@ export class Broker {
    */
   command(schema: string, message: CommandMessage) {
     return this.createClient(schema).command(message);
+  }
+
+  /**
+   * Create a transport packet from this service
+   */
+  createPacket(
+    destinations: string | string[],
+    type: string,
+    name: string,
+    body: Buffer
+  ): TransportPacket {
+    return {
+      header: {
+        // This service
+        service: this.serviceName,
+        // Request informations
+        destinations: Array.isArray(destinations)
+          ? destinations.join(',')
+          : destinations,
+        type,
+        name,
+      },
+      body,
+    };
   }
 
   /**

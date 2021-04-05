@@ -1,7 +1,6 @@
 import { Broker } from '../broker';
 import { ServiceSchema } from '../server/interface';
 import { BaseSerializer } from '../serializer';
-import { createSerializer } from '../serializer/create-serializer';
 import { BaseTransporter } from '../transporter';
 import {
   BadRequestError,
@@ -10,7 +9,6 @@ import {
   ConfigError,
   DuplicateError,
 } from '../error';
-import { RecordStorage } from '../schema';
 import { BrokerConfig } from '../interface';
 import {
   CommandHandler,
@@ -31,7 +29,6 @@ export class Client {
 
   private serializer: BaseSerializer;
   private transporter: BaseTransporter;
-  private storage: RecordStorage;
 
   private interceptors: Interceptor[] = [];
 
@@ -47,11 +44,7 @@ export class Client {
     service: string | ServiceSchema,
     private readonly dependencies: Dependencies
   ) {
-    this.storage = new RecordStorage([]);
-    this.serializer = createSerializer(config.serializer, this.storage);
-
     this.interceptors.push(...(config.client?.interceptors || []));
-
     this.transporter = this.broker.transporter;
 
     this.dependencies.addDependency(service);
@@ -80,24 +73,12 @@ export class Client {
     header['name'] = name;
   }
 
-  private setSchema(schema: ServiceSchema) {
-    if (!schema) {
-      throw new BadRequestError(`Client not found service schema`);
-    }
-    this.schema = schema;
-
-    // Parsing serializer
-    Object.values(this.schema.records).forEach((type) => {
-      this.storage.add(type);
-    });
-  }
-
   async getSchema(): Promise<ServiceSchema> {
     if (this.schema) return this.schema;
     else {
-      const schema = await this.dependencies.getSchema(this.peerService);
-      this.setSchema(schema);
-      return schema;
+      this.schema = await this.dependencies.getSchema(this.peerService);
+      this.serializer = await this.dependencies.getSerializer(this.peerService);
+      return this.schema;
     }
   }
 

@@ -65,6 +65,12 @@ export interface TransportPacket {
   body: Buffer;
 }
 
+export interface MessagePacket {
+  destinations: string;
+  header: Record<string, string>;
+  body: Buffer;
+}
+
 export interface ExtractClientMethod<I = unknown, O = unknown> {
   (input: I, header?: Packet['header']): Promise<O>;
 }

@@ -79,6 +79,8 @@ async function main() {
     message: 'awesome',
   });
   console.log(signal);
+  const packet = serviceBroker.createPacket('baz', 'signal', 'init', signal);
+  console.log(packet);
 
   const client = clientBroker.createClient('bar');
   console.log(await client.call('hello', { name: 'williele' }));
