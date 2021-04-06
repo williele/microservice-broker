@@ -3,14 +3,15 @@ import { BrokerModule } from '@williele/broker-nest';
 import { Tracer } from 'opentracing';
 
 import { AppService } from './app.service';
-import { Demo } from './model';
+import { Demo, DemoSignal } from './model';
+import { OutboxService } from './shared/outbox.service';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
   imports: [
     BrokerModule.forRootAsync({
       import: [SharedModule],
-      factory: (tracer: Tracer) => ({
+      factory: (tracer: Tracer, outbox: OutboxService) => ({
         serviceName: 'nest',
         serializer: { name: 'arvo' },
         transporter: {
@@ -22,11 +23,16 @@ import { SharedModule } from './shared/shared.module';
         logger: new Logger('Broker'),
         server: {
           records: [Demo],
+          signals: [{ record: DemoSignal }],
           schemaFile: './apps/nest-service/service-schema.json',
+        },
+        outbox: {
+          outbox,
+          redis: 'redis://localhost:6380',
         },
         tracer,
       }),
-      inject: [Tracer],
+      inject: [Tracer, OutboxService],
     }),
     SharedModule,
   ],

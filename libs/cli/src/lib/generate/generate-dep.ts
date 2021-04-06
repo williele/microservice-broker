@@ -29,6 +29,7 @@ export function generateDependency(
     'ExtractClientMethod',
     'ExtractCommandMessage',
     'ExtractCommandCallback',
+    'ExtractSignalHandler',
     'Broker'
   );
 
@@ -196,11 +197,25 @@ function generateClient(aliasName: string, schema: ServiceSchema) {
     );
   });
 
-  return [dNode, sNode];
-}
+  // Generate signal
+  Object.entries(schema.signals).forEach(([name, config]) => {
+    // Signal handler
+    addProp(
+      `${name}Handle`,
+      new TypeNode('ExtractSignalHandler', [new TypeNode(config.request)]),
+      new CallFunctionNode(
+        'this.createSignalHandler',
+        new ValueNode(name, true)
+      ),
+      [
+        '@signalHandler',
+        config.description,
+        config.deprecated && '@deprecated',
+      ].filter((c) => !!c)
+    );
+  });
 
-export function clientPropName(name: string) {
-  return name.split('.').join('_');
+  return [dNode, sNode];
 }
 
 export function clientClassName(name: string) {

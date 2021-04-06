@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ForbiddenError } from '@williele/broker';
+import { BadRequestError, Broker, ForbiddenError } from '@williele/broker';
 import type { Context } from '@williele/broker';
 import {
   Command,
@@ -8,7 +8,13 @@ import {
   Service,
   UseMiddleware,
 } from '@williele/broker-nest';
-import { DemoCommand, DemoListInput, DemoListOutput } from './model';
+import {
+  DemoCommand,
+  DemoListInput,
+  DemoListOutput,
+  DemoSignal,
+} from './model';
+import { OutboxService } from './shared/outbox.service';
 
 @Injectable()
 class DemoMiddleware implements Middleware {
@@ -21,6 +27,24 @@ class DemoMiddleware implements Middleware {
 @Service()
 @UseMiddleware(DemoMiddleware)
 export class AppService {
+  constructor(
+    private readonly broker: Broker,
+    private readonly outbox: OutboxService
+  ) {}
+
+  _demoSignalCallback = this.broker.onSignal<DemoSignal>(
+    DemoSignal.name,
+    (msg, error) => {
+      console.log(msg);
+
+      console.log(`Signal to ${msg.destination} callback`);
+      if (error) {
+        console.log('Error', error.message);
+      }
+      console.log('SIGNAL CALLBACK:', msg.payload);
+    }
+  );
+
   @Method({
     request: DemoListInput,
     response: DemoListOutput,
@@ -38,10 +62,24 @@ export class AppService {
   @Command({
     request: DemoCommand,
   })
-  demo(ctx: Context<DemoCommand>) {
+  async demo(ctx: Context<DemoCommand>) {
     const name = ctx.body.name;
+    console.log(ctx.headers());
+
+    const service = ctx.header('service');
+
+    if (!service) throw new BadRequestError(`Missing service header`);
     if (name === 'joker') throw new ForbiddenError(`I'm Batman`);
 
-    console.log(name);
+    const signal = this.broker.createSignal<DemoSignal>(
+      ctx.header('service'),
+      DemoSignal.name,
+      { name }
+    );
+    const outbox = await this.outbox.add(signal);
+
+    await this.broker.emitOutbox(outbox);
+    console.log('SIGNAL OUTBOX:', outbox);
+    console.log('RECEIVE COMMAND:', name);
   }
 }

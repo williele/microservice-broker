@@ -26,3 +26,9 @@ export class DemoCommand {
   @Field(1, { type: 'string' })
   name: string;
 }
+
+@Record()
+export class DemoSignal {
+  @Field(1, { type: 'string' })
+  name: string;
+}

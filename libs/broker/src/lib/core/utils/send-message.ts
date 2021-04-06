@@ -70,7 +70,7 @@ export async function sendMessage(
   const callbackHandle = async (error?) => {
     if (!callback) return;
 
-    const callbackMsg: CallbackMessage = Object.create(message);
+    const callbackMsg: CallbackMessage = Object.create(message.packet);
     // Decode payload
     callbackMsg.payload = from.serializer.decode(message.request, payload);
 

@@ -152,7 +152,7 @@ export class Client {
 
     return sendMessage(
       {
-        service: this.peerService,
+        service: this.broker.serviceName,
         serializer: this.serializer,
         transporter: this.transporter,
       },

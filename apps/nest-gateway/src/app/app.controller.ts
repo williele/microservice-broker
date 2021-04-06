@@ -16,11 +16,17 @@ export class AppController {
     private readonly outbox: OutboxService
   ) {}
 
-  _demoCallback = this.nestService.demoCommandCallback(({ payload }, error) => {
+  _demoCallback = this.nestService.demoCommandCallback((msg, error) => {
     if (error) {
       console.log('COMMAND ERROR:', error.message);
     }
-    console.log('COMMAND CALLBACK:', payload);
+    console.log('COMMAND CALLBACK:', msg.payload);
+  });
+
+  _demoSignal = this.nestService.DemoSignalHandle({
+    async handler(ctx) {
+      console.log('RECEIVE SIGNAL:', ctx.body.name);
+    },
   });
 
   @Get()

@@ -18,6 +18,10 @@ export interface DemoCommand {
   name: string;
 }
 
+export interface DemoSignal {
+  name: string;
+}
+
 class NestClient extends ExtractClient {
   constructor(broker: Broker) {
     super(broker, 'nest');
@@ -40,6 +44,10 @@ class NestClient extends ExtractClient {
    */
   readonly demoCommandCallback = this.createCommandCallback<DemoCommand>(
     'demo'
+  );
+
+  readonly DemoSignalHandle = this.createSignalHandler<DemoSignal>(
+    'DemoSignal'
   );
 }
 

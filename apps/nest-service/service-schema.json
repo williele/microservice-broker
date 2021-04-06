@@ -48,6 +48,15 @@
           "type": "string"
         }
       }
+    },
+    "DemoSignal": {
+      "name": "DemoSignal",
+      "fields": {
+        "name": {
+          "order": 1,
+          "type": "string"
+        }
+      }
     }
   },
   "methods": {
@@ -61,5 +70,9 @@
       "request": "DemoCommand"
     }
   },
-  "signals": {}
+  "signals": {
+    "DemoSignal": {
+      "request": "DemoSignal"
+    }
+  }
 }
