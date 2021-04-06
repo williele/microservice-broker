@@ -16,31 +16,31 @@ export class AppController {
     private readonly outbox: OutboxService
   ) {}
 
-  _demoCallback = this.nestService.commands.demoCallback(
-    ({ payload }, error) => {
-      if (error) {
-        console.log('COMMAND ERROR:', error.message);
-      }
-      console.log('COMMAND CALLBACK:', payload);
-    }
-  );
+  // _demoCallback = this.nestService.commands.demoCallback(
+  //   ({ payload }, error) => {
+  //     if (error) {
+  //       console.log('COMMAND ERROR:', error.message);
+  //     }
+  //     console.log('COMMAND CALLBACK:', payload);
+  //   }
+  // );
 
   @Get()
   hello(@Query('name') name: string, @Query('length') length: string) {
-    return this.nestService.methods
-      .hello({
+    return this.nestService
+      .helloMethod({
         name: name || 'Someone',
         length: toNumber(length, 10),
       })
       .then((r) => r.list);
   }
 
-  @Get('demo')
-  async demo(@Query('name') name: string) {
-    const packet = await this.nestService.commands.demo({
-      name: name || 'someone',
-    });
-    const msg = await this.outbox.add(packet);
-    await this.broker.emitOutbox(msg);
-  }
+  // @Get('demo')
+  // async demo(@Query('name') name: string) {
+  //   const packet = await this.nestService.commands.demo({
+  //     name: name || 'someone',
+  //   });
+  //   const msg = await this.outbox.add(packet);
+  //   await this.broker.emitOutbox(msg);
+  // }
 }

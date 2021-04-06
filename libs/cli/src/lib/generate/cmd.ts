@@ -1,4 +1,4 @@
-import { Logger } from '@caporal/core';
+// import { Logger } from '@caporal/core';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { ServiceSchema } from '@williele/broker';
 // import { ServiceSchema } from 'libs/broker/src/lib/core';
@@ -13,7 +13,7 @@ export async function generateCmd(
     configFile: string;
     services?: string[];
   },
-  logger?: Logger
+  logger?: Console
 ) {
   try {
     const config = new Configure(options.configFile, logger);
@@ -46,11 +46,18 @@ async function generate(config: Configure, services?: string[]) {
     });
 }
 
+/**
+ * Generate client files for a service
+ * @param config
+ * @param name
+ * @param strict
+ * @returns
+ */
 export function generateService(
   config: Configure,
   name: string,
   strict = true
-) {
+): { text: string; fileName: string }[] {
   const service = config.services[name];
   if (!service) {
     throw new TypeError(`Service '${name}' not found in config file`);

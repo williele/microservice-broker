@@ -12,7 +12,7 @@
     "@williele/broker": "latest"
   },
   "dependencies": {
-    "@caporal/core": "^2.0.2",
+    "yargs": "^15.4.1",
     "yaml": "^1.10.2",
     "ajv": "^6.12.6"
   }

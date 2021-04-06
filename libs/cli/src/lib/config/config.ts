@@ -2,7 +2,7 @@ import { Broker, SerializerConfig, TransporterConfig } from '@williele/broker';
 import { readFileSync } from 'fs';
 import { dirname, extname, resolve } from 'path';
 import { parse } from 'yaml';
-import { Logger } from '@caporal/core';
+// import { Logger } from '@caporal/core';
 import { Service, Source } from './interface';
 import { validate } from './validate';
 
@@ -12,7 +12,7 @@ export class Configure {
 
   readonly configDir: string;
 
-  constructor(configFile: string, public readonly logger?: Logger) {
+  constructor(configFile: string, public readonly logger?: any) {
     // Load file
     const context = readFileSync(configFile, 'utf8');
     let config;

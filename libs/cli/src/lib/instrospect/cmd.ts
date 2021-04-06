@@ -1,4 +1,4 @@
-import { Logger } from '@caporal/core';
+// import { Logger } from '@caporal/core';
 import { Broker } from '@williele/broker';
 import { mkdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
@@ -10,7 +10,7 @@ export async function introspectCmd(
   options: {
     configFile: string;
   },
-  logger?: Logger
+  logger?: any
 ) {
   try {
     const config = new Configure(options.configFile, logger);
@@ -74,7 +74,7 @@ async function createServiceSchema(config: Configure, service: LocalService) {
     const broker: Broker = await getBroker(target.source);
     const client = broker.createClient(target.serviceName);
 
-    const targetSchema = await client.fetchSchema().catch(async (err) => {
+    const targetSchema = await client.getSchema().catch(async (err) => {
       await destroyAll();
       throw err;
     });
