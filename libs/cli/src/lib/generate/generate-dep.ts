@@ -1,8 +1,4 @@
-import type {
-  MethodInfo,
-  NamedRecordType,
-  ServiceSchema,
-} from '@williele/broker';
+import type { NamedRecordType, ServiceSchema } from '@williele/broker';
 import {
   AssignmentNode,
   CallFunctionNode,
@@ -31,6 +27,8 @@ export function generateDependency(
     '@williele/broker',
     'ExtractClient',
     'ExtractClientMethod',
+    'ExtractCommandMessage',
+    'ExtractCommandCallback',
     'Broker'
   );
 
@@ -46,11 +44,7 @@ export function generateDependency(
     declareFile.addNodes(inter);
   });
 
-  const [dClass, sClass] = generateClient(
-    aliasName,
-    serviceSchema.serviceName,
-    serviceSchema.methods
-  );
+  const [dClass, sClass] = generateClient(aliasName, serviceSchema);
 
   declareFile.addNodes(dClass);
   scriptFile.addNodes(sClass);
@@ -58,6 +52,11 @@ export function generateDependency(
   return { declareFile, scriptFile };
 }
 
+/**
+ * Generate a record interface
+ * @param record
+ * @returns
+ */
 function generateType(record: NamedRecordType): InterfaceNode {
   const node = new InterfaceNode(record.name);
   node.export = true;
@@ -88,12 +87,16 @@ function generateType(record: NamedRecordType): InterfaceNode {
   return node;
 }
 
-function generateClient(
-  aliasName: string,
-  serviceName: string,
-  methods: Record<string, MethodInfo>
-) {
+/**
+ * Generate client class
+ * @param aliasName
+ * @param serviceName
+ * @param methods
+ * @returns
+ */
+function generateClient(aliasName: string, schema: ServiceSchema) {
   const className = clientClassName(aliasName);
+  const serviceName = schema.serviceName;
 
   // Declare class
   const dNode = new ClassNode(className, 'ExtractClient');
@@ -127,32 +130,70 @@ function generateClient(
   dNode.comments.push(`Extract client for ${aliasName} service`);
   sNode.comments.push(`Extract client for ${aliasName} service`);
 
-  function methodGeneric(name: string) {
-    if (name === 'Null') return new TypeNode('null');
-    else return new TypeNode(name);
+  function addProp(
+    name: string,
+    type: TypeNode,
+    factory: CallFunctionNode,
+    comments?: string[]
+  ) {
+    const dprop = new VariableNode(`readonly ${name}`, type);
+    if (comments) dprop.comments.push(...comments);
+
+    const sprop = new AssignmentNode(new VariableNode(`this.${name}`), factory);
+
+    dNode.addProperty(new ClassPropertyNode(dprop));
+    sNode.constructorFn.blocks.push(sprop);
   }
 
   // Properties
-  Object.entries(methods).forEach(([name, config]) => {
-    const propName = clientPropName(name);
-    const type = new TypeNode('ExtractClientMethod');
-    type.generics.push(
-      methodGeneric(config.request),
-      methodGeneric(config.response)
+  // Generate methods
+  Object.entries(schema.methods).forEach(([name, config]) => {
+    addProp(
+      `${name}Method`,
+      new TypeNode('ExtractClientMethod', [
+        new TypeNode(config.request),
+        new TypeNode(config.response),
+      ]),
+      new CallFunctionNode('this.createMethod', new ValueNode(name, true)),
+      [
+        '@method',
+        config.description,
+        config.deprecated && '@deprecated',
+      ].filter((c) => !!c)
+    );
+  });
+
+  // Generate commands
+  Object.entries(schema.commands).forEach(([name, config]) => {
+    // Command
+    addProp(
+      `${name}Command`,
+      new TypeNode('ExtractCommandMessage', [new TypeNode(config.request)]),
+      new CallFunctionNode(
+        'this.createCommandMessage',
+        new ValueNode(name, true)
+      ),
+      [
+        '@command',
+        config.description,
+        config.deprecated && '@deprecated',
+      ].filter((c) => !!c)
     );
 
-    const dMethod = new VariableNode(`readonly ${propName}`, type);
-    dMethod.comments.push('@method');
-    if (config.description) dMethod.comments.push(config.description);
-
-    const sMethod = new AssignmentNode(
-      new VariableNode(`this.${propName}`),
-      new CallFunctionNode('this.createMethod', new ValueNode(name, true))
+    // Command callback
+    addProp(
+      `${name}CommandCallback`,
+      new TypeNode('ExtractCommandCallback', [new TypeNode(config.request)]),
+      new CallFunctionNode(
+        'this.createCommandCallback',
+        new ValueNode(name, true)
+      ),
+      [
+        '@commandCallback',
+        config.description,
+        config.deprecated && '@deprecated',
+      ].filter((c) => !!c)
     );
-
-    dNode.addProperty(new ClassPropertyNode(dMethod));
-    // Add in constructor
-    sNode.constructorFn.blocks.push(sMethod);
   });
 
   return [dNode, sNode];

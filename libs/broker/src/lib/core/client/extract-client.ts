@@ -3,6 +3,7 @@ import {
   ExtractClientMethod,
   ExtractCommandCallback,
   ExtractCommandMessage,
+  ExtractSignalHandler,
 } from './interface';
 import { AddSignalConfig, ServiceSchema } from '../server';
 import { Client } from './client';
@@ -52,7 +53,9 @@ export class ExtractClient {
     return (handler) => this.client.onCommand(command, handler);
   }
 
-  protected createSignalHandler<I = unknown>(signal: string) {
+  protected createSignalHandler<I = unknown>(
+    signal: string
+  ): ExtractSignalHandler<I> {
     return (config: Omit<AddSignalConfig<I>, 'type' | 'service' | 'name'>) => {
       this.broker.add({
         type: 'signal',

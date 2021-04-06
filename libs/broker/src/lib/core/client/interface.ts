@@ -1,4 +1,8 @@
-import { MessagePacket, MessageCallback } from '@williele/broker';
+import {
+  MessagePacket,
+  MessageCallback,
+  AddSignalConfig,
+} from '@williele/broker';
 
 /**
  * Request and response packet
@@ -31,4 +35,8 @@ export interface ExtractCommandMessage<I = unknown> {
 
 export interface ExtractCommandCallback<I = unknown> {
   (handler: MessageCallback<I>): Promise<void> | void;
+}
+
+export interface ExtractSignalHandler<I = unknown> {
+  (config: Omit<AddSignalConfig<I>, 'type' | 'service' | 'name'>): void;
 }

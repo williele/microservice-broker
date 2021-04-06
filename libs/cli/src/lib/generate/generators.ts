@@ -73,9 +73,10 @@ abstract class SymbolNode extends Node {
 }
 
 export class TypeNode extends SymbolNode {
-  public readonly generics: SymbolNode[] = [];
-
-  constructor(public text: string) {
+  constructor(
+    public text: string,
+    public readonly generics: SymbolNode[] = []
+  ) {
     super();
   }
   lines() {
