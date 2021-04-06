@@ -10,7 +10,6 @@ import { request, serializeRequest } from './request';
 import { subjectRpc } from '../utils/subject-name';
 import { Dependencies } from '../dependencies';
 import { injectHeader } from '../utils/header';
-import { EventEmitter } from 'events';
 import { sendMessage } from '../utils/send-message';
 
 export class Client {
@@ -23,12 +22,8 @@ export class Client {
 
   private interceptors: Interceptor[] = [];
 
-  // event
-  private callbackEvent = new EventEmitter();
-
   // cache
   private methodComposes: Record<string, InterceptorCompose> = {};
-  private commandComposes: Record<string, InterceptorCompose> = {};
 
   // Command handlers
   private commandCallback: Record<string, MessageCallback> = {};

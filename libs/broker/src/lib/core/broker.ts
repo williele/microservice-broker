@@ -7,7 +7,6 @@ import { Server } from './server/server';
 import { BadRequestError, ConfigError } from './error';
 import { OutboxProcessor } from './outbox/procesor';
 import { AddHandlerConfig, ServiceSchema } from './server';
-import { BrokerClient } from './client/broker-client';
 import { Dependencies } from './dependencies';
 import { MessagePackage } from './outbox';
 
@@ -20,7 +19,6 @@ export class Broker {
 
   private readonly dependencies: Dependencies;
   private readonly server: Server;
-  private readonly brokerClient: BrokerClient;
   private readonly clients: Record<string, Client> = {};
 
   private started = false;
@@ -38,9 +36,6 @@ export class Broker {
     if (this.config.disableServer !== true) {
       this.server = new Server(this, config, this.dependencies);
     }
-
-    // Broker client
-    this.brokerClient = new BrokerClient(this, config, this.server);
 
     // Add outbox
     if (this.config.outbox) {
@@ -72,6 +67,10 @@ export class Broker {
     this.started = true;
   }
 
+  /**
+   * Destroy broker
+   * @returns
+   */
   async destroy() {
     if (!this.started) return;
     await this.transporter.disconnect();
@@ -170,6 +169,11 @@ export class Broker {
     if (this.outboxProcessor) return this.outboxProcessor.add(message);
   }
 
+  /**
+   * Emit message packet
+   * @param message
+   * @returns
+   */
   async emit(message: MessagePacket) {
     const [type] = message.request.split(':');
     if (type === 'command') {

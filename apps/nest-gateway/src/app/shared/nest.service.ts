@@ -20,52 +20,7 @@ export interface DemoCommand {
 
 class NestClient extends ExtractClient {
   constructor(broker: Broker) {
-    super(broker, {
-      serviceName: 'nest',
-      serializer: 'arvo',
-      transporter: 'nats',
-      records: {
-        Demo: {
-          name: 'Demo',
-          fields: { message: { order: 1, type: 'string' } },
-        },
-        DemoListInput: {
-          name: 'DemoListInput',
-          fields: {
-            name: { order: 1, type: 'string' },
-            length: { order: 2, type: 'int' },
-          },
-        },
-        DemoListOutput: {
-          name: 'DemoListOutput',
-          fields: {
-            list: {
-              order: 1,
-              type: 'array',
-              items: { type: 'pointer', pointer: 'Demo' },
-            },
-          },
-        },
-        DemoCommand: {
-          name: 'DemoCommand',
-          fields: {
-            name: { order: 1, type: 'string' },
-          },
-        },
-      },
-      methods: {
-        hello: {
-          request: 'DemoListInput',
-          response: 'DemoListOutput',
-        },
-      },
-      commands: {
-        demo: {
-          request: 'DemoCommand',
-        },
-      },
-      signals: {},
-    });
+    super(broker, 'nest');
   }
 
   readonly methods = {

@@ -21,7 +21,7 @@ export class ExtractClient {
    * @param serviceName
    * @param schema Default schema, if given client won't fetch schema from target service
    */
-  constructor(private readonly broker: Broker, schema: ServiceSchema) {
+  constructor(private readonly broker: Broker, schema: string | ServiceSchema) {
     this.client = broker.createClient(schema);
     this.peerService = this.client.peerService;
   }
