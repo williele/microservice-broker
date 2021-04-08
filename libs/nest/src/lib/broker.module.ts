@@ -3,7 +3,8 @@ import {
   DynamicModule,
   Provider,
   ModuleMetadata,
-  OnModuleInit,
+  OnApplicationBootstrap,
+  OnApplicationShutdown,
 } from '@nestjs/common';
 import { DiscoveryModule } from '@nestjs/core';
 import { InjectorDependency } from '@nestjs/core/injector/injector';
@@ -27,7 +28,8 @@ const BROKER_CONFIG_TOKEN = 'BROKER_CONFIG_TOKEN';
   ],
   exports: [BrokerServer],
 })
-export class BrokerModule implements OnModuleInit {
+export class BrokerModule
+  implements OnApplicationBootstrap, OnApplicationShutdown {
   static forRoot(config: BrokerConfig): DynamicModule {
     const brokerProvider: Provider = {
       provide: Broker,
@@ -74,7 +76,11 @@ export class BrokerModule implements OnModuleInit {
 
   constructor(private readonly broker: Broker) {}
 
-  async onModuleInit() {
+  async onApplicationBootstrap() {
     await this.broker.start();
+  }
+
+  async onApplicationShutdown() {
+    await this.broker.destroy();
   }
 }
